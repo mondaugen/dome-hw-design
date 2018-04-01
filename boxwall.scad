@@ -78,7 +78,7 @@ brc_buttons_y=box_wall+component_wall_margin+button_height*0.5;
 blc_buttons_anchor_x=box_wall+component_wall_margin+button_width*0.5;
 blc_buttons_anchor_y=box_wall+component_wall_margin+button_height*0.5;
 blc_bottom_buttons_x=[blc_buttons_anchor_x,blc_buttons_anchor_x+button_width+button_margin];
-blc_top_buttons_x=[blc_bottom_buttons_x[0]+button_width/2,blc_bottom_buttons_x[1]+button_width/2];
+blc_top_buttons_x=[blc_bottom_buttons_x[0]+button_width*(2/3),blc_bottom_buttons_x[1]+button_width*(2/3)];
 blc_buttons_y=[blc_buttons_anchor_x,blc_buttons_anchor_x+button_height+button_margin];
 
 // Detail
@@ -238,10 +238,10 @@ module button_holes () {
         rounded_square([x,brc_buttons_y,box_height],[button_width,button_height,10],corner_r);
     }
     for (x=blc_bottom_buttons_x) {
-        rounded_square([x,blc_buttons_y[0],box_height],[button_width,button_height,10],corner_r);
+        rounded_square([x,blc_buttons_y[1],box_height],[button_width,button_height,10],corner_r);
     }
     for (x=blc_top_buttons_x) {
-        rounded_square([x,blc_buttons_y[1],box_height],[button_width,button_height,10],corner_r);
+        rounded_square([x,blc_buttons_y[0],box_height],[button_width,button_height,10],corner_r);
     }
 }
 
