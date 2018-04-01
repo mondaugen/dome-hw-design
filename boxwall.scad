@@ -11,18 +11,11 @@ box_height=encoder_clearance+pcb_thickness+max(dc_jack_height,midi_jack_height)+
 echo(box_height);
 corner_r=0.25;
 
-left_box_outer=box_width+corner_r;
+component_wall_margin=2.5; // minimum distance from inner wall to component
+jack_controls_margin=2; // minimum distance from jack components to lower components
+
+right_box_outer=box_width+corner_r;
 top_box_outer=box_length+corner_r;
-
-module sanity_check_width () {
-    translate([0,0,-10])
-    cube([left_box_outer,10,100]);
-}
-
-module sanity_check_height () {
-    translate([0,0,-10])
-    cube([10,top_box_outer,100]);
-}
 
 midi_jack_spacing=2.5;
 midi_jack_width=20.9;
@@ -42,6 +35,7 @@ dc_jack_center_z=box_height-box_wall-encoder_clearance-pcb_thickness-dc_jack_hei
 dc_jack_depth=14.2;
 dc_jack_protrusion=7; // how far DC jack hangs off of PCB
 dc_jack_intrusion=dc_jack_depth-dc_jack_protrusion; // how far dc jack goes into PCB
+jack_y_occupation=max([dc_jack_intrusion,midi_jack_depth]);
 
 pcb_top_inner_wall_dist=encoder_clearance; // distance between top of pcb and inner top wall
 
@@ -61,8 +55,18 @@ led_hole_play=0.1;
 led_block_height=led_hole_margin+(led_hole_size+led_hole_margin)*n_leds_y;
 led_block_width=led_hole_margin+(led_hole_size+led_hole_margin)*n_leds_x;
 
-component_wall_margin=2.5; // minimum distance from inner wall to component
-jack_controls_margin=2; // minimum distance from jack components to lower components
+encoder_margin=2.5;
+encoder_length=13.75;
+encoder_top_to_center=7.25;
+encoder_width=12;
+encoder_hole_radius=6.35*0.5;
+encoder_y=[
+    box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center),
+    box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center
+        +encoder_length+encoder_margin),
+];
+encoder_x=right_box_outer-(box_wall+component_wall_margin+encoder_width*0.5);
+
 
 // Detail
 $fn=50;
@@ -153,7 +157,7 @@ module square_block_grid_graded(
 
 module led_block() {
     translate([(box_wall+component_wall_margin),
-        top_box_outer-(box_wall+max([dc_jack_intrusion,midi_jack_depth])
+        top_box_outer-(box_wall+jack_y_occupation
             +jack_controls_margin+led_block_height),
         box_height-led_hole_depth-led_hole_cover]) 
     cube([led_hole_margin+n_leds_x*(led_hole_size+led_hole_margin),
@@ -163,7 +167,7 @@ module led_block() {
             
 module led_holes() { 
     translate([(box_wall+component_wall_margin),
-        top_box_outer-(box_wall+max([dc_jack_intrusion,midi_jack_depth])
+        top_box_outer-(box_wall+jack_y_occupation
             +jack_controls_margin+led_block_height),
         box_height-led_hole_depth-led_hole_cover-led_hole_play]) 
     // Graded for now to see what depth is best
@@ -172,6 +176,13 @@ module led_holes() {
         led_hole_depth+led_hole_play,n_leds_x,n_leds_y);
     //square_block_grid(led_hole_size,led_hole_margin,
     //    led_hole_depth+led_hole_play,n_leds_x,n_leds_y);
+}
+
+module encoder_holes () {
+    for (y=encoder_y) {
+        translate([encoder_x,y,box_height-box_wall*0.5])
+            cylinder(r=encoder_hole_radius,h=2*box_wall,center=true);
+    }
 }
 
 
@@ -197,8 +208,20 @@ difference () {
         led_block();
         box_top();
     }
-    led_holes();
+    union () {
+        led_holes();
+        encoder_holes();
+    }
 }
 
+module sanity_check_width () {
+    translate([0,0,-10])
+    cube([right_box_outer,10,100]);
+}
+
+module sanity_check_height () {
+    translate([0,0,-10])
+    cube([10,top_box_outer,100]);
+}
 //sanity_check_width();
 //sanity_check_height();
