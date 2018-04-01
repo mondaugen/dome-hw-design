@@ -67,6 +67,19 @@ encoder_y=[
 ];
 encoder_x=right_box_outer-(box_wall+component_wall_margin+encoder_width*0.5);
 
+button_width=10;
+button_height=10;
+button_margin=2.5;
+brc_buttons_anchor_x=encoder_x;//right_box_outer-(box_wall+component_wall_margin+button_width*0.5);
+brc_buttons_x=[brc_buttons_anchor_x,
+    brc_buttons_anchor_x - (button_margin + button_width)];
+brc_buttons_y=box_wall+component_wall_margin+button_height*0.5;
+
+blc_buttons_anchor_x=box_wall+component_wall_margin+button_width*0.5;
+blc_buttons_anchor_y=box_wall+component_wall_margin+button_height*0.5;
+blc_bottom_buttons_x=[blc_buttons_anchor_x,blc_buttons_anchor_x+button_width+button_margin];
+blc_top_buttons_x=[blc_bottom_buttons_x[0]+button_width/2,blc_bottom_buttons_x[1]+button_width/2];
+blc_buttons_y=[blc_buttons_anchor_x,blc_buttons_anchor_x+button_height+button_margin];
 
 // Detail
 $fn=50;
@@ -185,6 +198,52 @@ module encoder_holes () {
     }
 }
 
+module rounded_square(
+    center, // x,y,z coordinates of center
+    dims, // width (x dimension), length (y dimension), height (z dimension)
+    corner_radius, // the radius of the corners
+) {
+    // the corners
+    corners_x=[-(dims[0]*0.5-corner_radius),(dims[0]*0.5-corner_radius)];
+    corners_y=[-(dims[1]*0.5-corner_radius),(dims[1]*0.5-corner_radius)];
+    translate(center) {
+        // Draw the corners
+        for (x=corners_x) {
+            for(y=corners_y) {
+                translate ([x,y,0]) {
+                    cylinder(r=corner_radius,h=dims[2],center=true);
+                }
+            }
+        }
+        // draw the inner cube
+        cube([dims[0]-2*corner_radius,dims[1]-2*corner_radius,dims[2]],center=true);
+        // fill in the edges
+        for (x=corners_x) {
+            translate([x,0,0]) {
+                cube([2*corner_radius,dims[1]-2*corner_radius,dims[2]],center=true);
+            }
+        }
+        for (y=corners_y) {
+            translate([0,y,0]) {
+                cube([dims[0]-2*corner_radius,2*corner_radius,dims[2]],center=true);
+            }
+        }
+        
+    }
+}
+    
+module button_holes () {
+    // bottom right hand corner holes
+    for (x=brc_buttons_x) {
+        rounded_square([x,brc_buttons_y,box_height],[button_width,button_height,10],corner_r);
+    }
+    for (x=blc_bottom_buttons_x) {
+        rounded_square([x,blc_buttons_y[0],box_height],[button_width,button_height,10],corner_r);
+    }
+    for (x=blc_top_buttons_x) {
+        rounded_square([x,blc_buttons_y[1],box_height],[button_width,button_height,10],corner_r);
+    }
+}
 
 box_xy_corner();
 rotate([0,0,180])
@@ -211,6 +270,7 @@ difference () {
     union () {
         led_holes();
         encoder_holes();
+        button_holes();
     }
 }
 
