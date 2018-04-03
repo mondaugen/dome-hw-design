@@ -10,6 +10,7 @@ midi_jack_height=19.6;
 box_height=encoder_clearance+pcb_thickness+max(dc_jack_height,midi_jack_height)+2*box_wall+play; 
 echo(box_height);
 corner_r=0.25;
+inner_box_wall_z=box_height-box_wall+corner_r;
 
 component_wall_margin=2.5; // minimum distance from inner wall to component
 jack_controls_margin=2; // minimum distance from jack components to lower components
@@ -38,6 +39,7 @@ dc_jack_intrusion=dc_jack_depth-dc_jack_protrusion; // how far dc jack goes into
 jack_y_occupation=max([dc_jack_intrusion,midi_jack_depth]);
 
 pcb_top_inner_wall_dist=encoder_clearance; // distance between top of pcb and inner top wall
+pcb_top_z=inner_box_wall_z-pcb_top_inner_wall_dist;
 
 led_hole_cover=0.5;
 led_hole_cover_initial=1.5;
@@ -54,6 +56,11 @@ n_leds_y=4;
 led_hole_play=0.1; 
 led_block_height=led_hole_margin+(led_hole_size+led_hole_margin)*n_leds_y;
 led_block_width=led_hole_margin+(led_hole_size+led_hole_margin)*n_leds_x;
+led_block_x=(box_wall+component_wall_margin);
+led_block_y=top_box_outer-(box_wall+jack_y_occupation
+        +jack_controls_margin+led_block_height);
+led_block_z=pcb_top_z;//box_height-led_hole_depth-led_hole_cover;
+
 
 encoder_margin=2.5;
 encoder_length=13.75;
@@ -65,12 +72,11 @@ encoder_y=[
     box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center
         +encoder_length+encoder_margin),
 ];
-encoder_x=right_box_outer-(box_wall+component_wall_margin+encoder_width*0.5);
 
 button_width=10;
 button_height=10;
 button_margin=2.5;
-brc_buttons_anchor_x=encoder_x;//right_box_outer-(box_wall+component_wall_margin+button_width*0.5);
+brc_buttons_anchor_x=right_box_outer-(box_wall+component_wall_margin+button_width*0.5);
 brc_buttons_x=[brc_buttons_anchor_x,
     brc_buttons_anchor_x - (button_margin + button_width)];
 brc_buttons_y=box_wall+component_wall_margin+button_height*0.5;
@@ -80,6 +86,31 @@ blc_buttons_anchor_y=box_wall+component_wall_margin+button_height*0.5;
 blc_bottom_buttons_x=[blc_buttons_anchor_x,blc_buttons_anchor_x+button_width+button_margin];
 blc_top_buttons_x=[blc_bottom_buttons_x[0]+button_width*(2/3),blc_bottom_buttons_x[1]+button_width*(2/3)];
 blc_buttons_y=[blc_buttons_anchor_x,blc_buttons_anchor_x+button_height+button_margin];
+
+pcb_screw_len=8;
+pcb_screw_pilot_hole_radius=1;
+pcb_screw_hole_shell_width=3;
+pcb_screw_hole_z=pcb_top_z-pcb_thickness;
+right_pcb_screw_x=right_box_outer-box_wall-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius);
+pcb_screw_coords=[
+//    [led_block_x+led_block_width*(1/4),
+//        led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
+//    [led_block_x+led_block_width*(1/4),
+//        led_block_y+(led_block_height+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
+//    [led_block_x+led_block_width*(3/4),
+//        led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
+//    [led_block_x+led_block_width*(3/4),
+//        led_block_y+(led_block_height+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
+    [box_wall+pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius-corner_r,
+        led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
+    [led_block_x+led_block_width+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width,
+        led_block_y+led_block_height-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
+    [box_wall-corner_r+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius),
+        box_wall-corner_r+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
+    [right_pcb_screw_x,brc_buttons_y+button_height*0.5+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width]
+];
+
+encoder_x=right_pcb_screw_x-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+encoder_width*0.5);
 
 // Detail
 $fn=50;
@@ -115,7 +146,7 @@ module box_walls() {
     }
 }
 module box_top() {
-    translate([0,0,box_height-box_wall+corner_r])
+    translate([0,0,inner_box_wall_z])
     cube([box_width,box_length,box_wall]);
 }
 
@@ -169,10 +200,7 @@ module square_block_grid_graded(
 }
 
 module led_block() {
-    translate([(box_wall+component_wall_margin),
-        top_box_outer-(box_wall+jack_y_occupation
-            +jack_controls_margin+led_block_height),
-        box_height-led_hole_depth-led_hole_cover]) 
+    translate([led_block_x,led_block_y,led_block_z]) 
     cube([led_hole_margin+n_leds_x*(led_hole_size+led_hole_margin),
           led_hole_margin+n_leds_y*(led_hole_size+led_hole_margin),
           led_hole_depth]);
@@ -245,6 +273,23 @@ module button_holes () {
     }
 }
 
+module pcb_screw_holes () {
+    translate([0,0,pcb_screw_hole_z])
+    for (point=pcb_screw_coords) {
+        translate(point)
+               cylinder(r=pcb_screw_pilot_hole_radius,h=pcb_screw_len,center=false); 
+    }
+}
+
+module pcb_screw_shells () {
+    translate([0,0,pcb_screw_hole_z+pcb_thickness])
+    for (point=pcb_screw_coords) {
+        translate(point)
+               cylinder(r=pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width,
+                    h=inner_box_wall_z-(pcb_screw_hole_z+pcb_thickness),center=false); 
+    }
+}
+
 box_xy_corner();
 rotate([0,0,180])
     translate([-box_width,-box_length,0])
@@ -266,11 +311,13 @@ difference () {
     union () {
         led_block();
         box_top();
+        pcb_screw_shells();
     }
     union () {
         led_holes();
         encoder_holes();
         button_holes();
+        pcb_screw_holes();
     }
 }
 
@@ -283,5 +330,12 @@ module sanity_check_height () {
     translate([0,0,-10])
     cube([10,top_box_outer,100]);
 }
+
+module sanity_check_z () {
+    translate([-5,-5,0])
+    cube([10,10,inner_box_wall_z]);
+}
+
 //sanity_check_width();
 //sanity_check_height();
+//sanity_check_z();
