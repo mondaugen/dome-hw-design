@@ -1,4 +1,13 @@
 use <rounded_polygon.scad>
+use <../Round-Anything/polyround.scad>
+
+// Add radius to all points
+function points_w_radius(p,radius)=[for(i=[0:len(p)-1])[p[i].x,p[i].y,radius]];
+// Like polyRound but constant radius
+function polyRoundC(points,radius,fn=5,mode=0)=
+ polyRound(points_w_radius(points,radius),fn,mode);
+// Mirror xy points around x axis
+function mirror_xy_x(p)=[for(i=[0:len(p)-1])[p[i].x*-1,p[i].y]];
 
 // Coordinates
 box_width=70; // x-dimension
@@ -115,7 +124,7 @@ tab_height=5;
 tab_protrusion=2;
 tab_width=20;
 tab_points_y=[box_length*(1/4),box_length*(3/4)];
-tab_corner_r=0.1;
+tab_corner_r=.5;
 
 // Detail
 $fn=20;
@@ -299,17 +308,42 @@ module pcb_screw_shells () {
 module wall_tabs() {
     leftout=box_wall-corner_r;
     rightout=right_box_inner;
-   for (point=tab_points_y) {
-       translate([leftout,point+tab_width*0.5,0]) rotate([90,0,0])
-           translate([0,tab_top_z-tab_height,0])
-           rounded_convex_polygon([[0-tab_corner_r,0],
-                   [0-tab_corner_r,tab_height],[tab_protrusion,tab_height]]
-                   ,tab_corner_r,tab_width);
-       translate([rightout,point+tab_width*0.5,0]) rotate([90,0,0])
-           translate([0,tab_top_z-tab_height,0])
-           rounded_convex_polygon([[tab_corner_r,0],
-                   [tab_corner_r,tab_height],[-tab_protrusion,tab_height]]
-                   ,tab_corner_r,tab_width);
+    for (point=tab_points_y) {
+        translate([leftout,point+tab_width*0.5,0]) rotate([90,0,0])
+            translate([0,tab_top_z-tab_height,0])
+            linear_extrude(height=tab_width) {
+                polygon(polyRoundC([
+                            // dummy corners inside the wall
+                            //top
+                            [0,tab_height+tab_corner_r],
+                            [-tab_corner_r,tab_height+tab_corner_r],
+                            // bottom
+                            [-tab_corner_r,-tab_corner_r],
+                            [0,-tab_corner_r],
+                            // corners of shape
+                            [0,0],
+                            [tab_protrusion,tab_height],
+                            [0,tab_height]
+                            ],tab_corner_r,$fn,0));
+            }
+        translate([rightout,point+tab_width*0.5,0]) rotate([90,0,0])
+            translate([0,tab_top_z-tab_height,0])
+            linear_extrude(height=tab_width) {
+                polygon(polyRoundC(
+                            mirror_xy_x([
+                                // dummy corners inside the wall
+                                //top
+                                [0,tab_height+tab_corner_r],
+                                [-tab_corner_r,tab_height+tab_corner_r],
+                                // bottom
+                                [-tab_corner_r,-tab_corner_r],
+                                [0,-tab_corner_r],
+                                // corners of shape
+                                [0,0],
+                                [tab_protrusion,tab_height],
+                                [0,tab_height]
+                                ]),tab_corner_r,$fn,0));
+            }
     }
 }
 
