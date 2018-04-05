@@ -1,3 +1,5 @@
+use <rounded_polygon.scad>
+
 // Coordinates
 box_width=70; // x-dimension
 box_length=70; // y-dimension
@@ -8,7 +10,7 @@ pcb_thickness=1.575;
 dc_jack_height=11;
 midi_jack_height=19.6;
 box_height=encoder_clearance+pcb_thickness+max(dc_jack_height,midi_jack_height)+2*box_wall+play; 
-echo(box_height);
+echo("box height",box_height);
 corner_r=0.25;
 inner_box_wall_z=box_height-box_wall+corner_r;
 
@@ -16,6 +18,7 @@ component_wall_margin=2.5; // minimum distance from inner wall to component
 jack_controls_margin=2; // minimum distance from jack components to lower components
 
 right_box_outer=box_width+corner_r;
+right_box_inner=right_box_outer-box_wall;
 top_box_outer=box_length+corner_r;
 
 midi_jack_spacing=2.5;
@@ -40,6 +43,8 @@ jack_y_occupation=max([dc_jack_intrusion,midi_jack_depth]);
 
 pcb_top_inner_wall_dist=encoder_clearance; // distance between top of pcb and inner top wall
 pcb_top_z=inner_box_wall_z-pcb_top_inner_wall_dist;
+pcb_bottom_z=pcb_top_z-pcb_thickness;
+echo("pcb_bottom_z",pcb_bottom_z);
 
 led_hole_cover=0.5;
 led_hole_cover_initial=1.5;
@@ -93,14 +98,6 @@ pcb_screw_hole_shell_width=3;
 pcb_screw_hole_z=pcb_top_z-pcb_thickness;
 right_pcb_screw_x=right_box_outer-box_wall-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius);
 pcb_screw_coords=[
-//    [led_block_x+led_block_width*(1/4),
-//        led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
-//    [led_block_x+led_block_width*(1/4),
-//        led_block_y+(led_block_height+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
-//    [led_block_x+led_block_width*(3/4),
-//        led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
-//    [led_block_x+led_block_width*(3/4),
-//        led_block_y+(led_block_height+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
     [box_wall+pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius-corner_r,
         led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
     [led_block_x+led_block_width+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width,
@@ -112,9 +109,16 @@ pcb_screw_coords=[
 
 encoder_x=right_pcb_screw_x-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+encoder_width*0.5);
 
-// Detail
-$fn=50;
+// tabs to catch on walls
+tab_top_z=10;
+tab_height=5;
+tab_protrusion=2;
+tab_width=20;
+tab_points_y=[box_length*(1/4),box_length*(3/4)];
+tab_corner_r=0.1;
 
+// Detail
+$fn=20;
 
 module box_xy_corner() {
     rotate([-90,0,0])
@@ -282,11 +286,30 @@ module pcb_screw_holes () {
 }
 
 module pcb_screw_shells () {
+    // Need to add a tiny bit extra so that the shapes don't just "kiss"
     translate([0,0,pcb_screw_hole_z+pcb_thickness])
     for (point=pcb_screw_coords) {
         translate(point)
-               cylinder(r=pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width,
-                    h=inner_box_wall_z-(pcb_screw_hole_z+pcb_thickness),center=false); 
+               cylinder(r=pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+0.001,
+                    h=inner_box_wall_z-(pcb_screw_hole_z+pcb_thickness)+0.001,center=false); 
+    }
+}
+
+//translate([box_wall-corner_r,0,-5]) cube([10,10,10]);
+module wall_tabs() {
+    leftout=box_wall-corner_r;
+    rightout=right_box_inner;
+   for (point=tab_points_y) {
+       translate([leftout,point+tab_width*0.5,0]) rotate([90,0,0])
+           translate([0,tab_top_z-tab_height,0])
+           rounded_convex_polygon([[0-tab_corner_r,0],
+                   [0-tab_corner_r,tab_height],[tab_protrusion,tab_height]]
+                   ,tab_corner_r,tab_width);
+       translate([rightout,point+tab_width*0.5,0]) rotate([90,0,0])
+           translate([0,tab_top_z-tab_height,0])
+           rounded_convex_polygon([[tab_corner_r,0],
+                   [tab_corner_r,tab_height],[-tab_protrusion,tab_height]]
+                   ,tab_corner_r,tab_width);
     }
 }
 
@@ -312,6 +335,7 @@ difference () {
         led_block();
         box_top();
         pcb_screw_shells();
+        wall_tabs();
     }
     union () {
         led_holes();
