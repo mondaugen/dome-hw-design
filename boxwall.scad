@@ -8,9 +8,11 @@ function polyRoundC(points,radius,fn=5,mode=0)=
  polyRound(points_w_radius(points,radius),fn,mode);
 // Mirror xy points around x axis
 function mirror_xy_x(p)=[for(i=[0:len(p)-1])[p[i].x*-1,p[i].y]];
+// Translate xy points in a list by q
+function translate_xy(p,q)=[for(i=[0:len(p)-1])[p[i].x+q.x,p[i].y+q.y]];
 
 // Coordinates
-box_width=70; // x-dimension
+box_width=100; // x-dimension
 box_length=70; // y-dimension
 box_wall=2.5;
 play=5;
@@ -125,6 +127,29 @@ tab_height=20-tab_corner_r;
 tab_protrusion=2;
 tab_width=20;
 tab_points_y=[box_length*(1/4),box_length*(3/4)];
+
+// the bottom (closing the shape), called the "lid"
+// gap between box and lid
+lid_gap=0.2;
+// corner closest to origin
+lid_corner=2*corner_r+lid_gap;
+// length in y-direction
+lid_length=box_length-2*(2*corner_r+lid_gap);
+// length in x-direction
+lid_width=box_width-2*(2*corner_r+lid_gap);
+// height of bottom part of lid (excluding tabs)
+lid_height=tab_top_z-tab_height;
+lid_round=1;
+lid_center=[box_width*0.5,box_length*0.5];
+lid_top_width=lid_width-2*(box_wall);
+lid_top_length=lid_length-2*(box_wall);
+lid_points=translate_xy([
+                    [0,0],
+                    [0+lid_width,0],
+                    [0+lid_width,0+lid_length],
+                    [0,0+lid_length]],-1*[lid_width*0.5,lid_length*0.5]);
+lid_shell_length=lid_length+2*lid_gap;
+lid_shell_width=lid_width+2*lid_gap;
 
 // Detail
 $fn=20;
@@ -347,36 +372,69 @@ module wall_tabs() {
     }
 }
 
-box_xy_corner();
-rotate([0,0,180])
-    translate([-box_width,-box_length,0])
-        box_xy_corner();
-translate([0,0,box_height]) {
-box_xy_corner();
-rotate([0,0,180])
-    translate([-box_width,-box_length,0])
-        box_xy_corner();
+module lid_solid () {
+    translate(lid_center)
+    linear_extrude(height=box_wall,scale=[lid_top_width/lid_width,lid_top_length/lid_length],center=false) {
+        polygon(polyRoundC(lid_points,
+                    lid_round,
+                    $fn));
+    }
 }
-box_corner_posts();
-difference () {
-    box_walls();
-    midi_jack_holes();
-    dc_jack_hole();
-}
-difference () {
 
-    union () {
-        led_block();
-        box_top();
-        pcb_screw_shells();
-        wall_tabs();
+module lid_void () {
+    translate(lid_center)
+    linear_extrude(height=box_wall,scale=[lid_top_width/lid_width,lid_top_length/lid_length],center=false) {
+        scale([lid_shell_width/lid_width,
+                lid_shell_length/lid_length]) 
+            polygon(polyRoundC(lid_points,
+                        lid_round,
+                        $fn));
     }
-    union () {
-        led_holes();
-        encoder_holes();
-        button_holes();
-        pcb_screw_holes();
+}
+
+// The box
+difference () {
+union () {
+    box_xy_corner();
+    rotate([0,0,180])
+        translate([-box_width,-box_length,0])
+        box_xy_corner();
+    translate([0,0,box_height]) {
+        box_xy_corner();
+        rotate([0,0,180])
+            translate([-box_width,-box_length,0])
+            box_xy_corner();
     }
+    box_corner_posts();
+    difference () {
+        box_walls();
+        midi_jack_holes();
+        dc_jack_hole();
+    }
+    difference () {
+        union () {
+            led_block();
+            box_top();
+            pcb_screw_shells();
+            wall_tabs();
+        }
+        union () {
+            led_holes();
+            encoder_holes();
+            button_holes();
+            pcb_screw_holes();
+        }
+    }
+}
+union () {
+    translate([0,0,-0.001])
+        lid_void ();
+}
+}
+
+// The lid
+union () {
+    lid_solid();
 }
 
 module sanity_check_width () {
