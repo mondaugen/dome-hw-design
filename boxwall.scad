@@ -126,6 +126,18 @@ tab_width=20;
 tab_points_y=[box_length*(1/4),box_length*(3/4)];
 tab_corner_r=.5;
 
+// the bottom (closing the shape), called the "lid"
+// gap between box and lid
+lid_gap=0.5;
+// corner closest to origin
+lid_corner=2*corner_r+lid_gap;
+// length in y-direction
+lid_length=box_length-2*(2*corner_r+lid_gap);
+// length in x-direction
+lid_width=box_width-2*(2*corner_r+lid_gap);
+// height of bottom part of lid (excluding tabs)
+lid_height=tab_top_z-tab_height;
+
 // Detail
 $fn=20;
 
@@ -346,6 +358,11 @@ module wall_tabs() {
             }
     }
 }
+
+module lid_solid () {
+polygon(polyRoundC([
+    [lid_corner,lid_corner],
+    [lid
 
 box_xy_corner();
 rotate([0,0,180])
