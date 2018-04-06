@@ -119,12 +119,12 @@ pcb_screw_coords=[
 encoder_x=right_pcb_screw_x-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+encoder_width*0.5);
 
 // tabs to catch on walls
-tab_top_z=10;
-tab_height=5;
+tab_corner_r=.5;
+tab_top_z=20;
+tab_height=20-tab_corner_r;
 tab_protrusion=2;
 tab_width=20;
 tab_points_y=[box_length*(1/4),box_length*(3/4)];
-tab_corner_r=.5;
 
 // Detail
 $fn=20;
