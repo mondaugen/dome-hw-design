@@ -1,5 +1,6 @@
 use <rounded_polygon.scad>
 use <../Round-Anything/polyround.scad>
+use <smooth_polyhedron.scad>
 
 // Add radius to all points
 function points_w_radius(p,radius)=[for(i=[0:len(p)-1])[p[i].x,p[i].y,radius]];
@@ -8,11 +9,14 @@ function polyRoundC(points,radius,fn=5,mode=0)=
  polyRound(points_w_radius(points,radius),fn,mode);
 // Mirror xy points around x axis
 function mirror_xy_x(p)=[for(i=[0:len(p)-1])[p[i].x*-1,p[i].y]];
+// Mirror xy points around y axis
+function mirror_xy_y(p)=[for(i=[0:len(p)-1])[p[i].x,p[i].y*-1]];
+function mirror_xy_xy(p)=mirror_xy_x(mirror_xy_y(p));
 // Translate xy points in a list by q
 function translate_xy(p,q)=[for(i=[0:len(p)-1])[p[i].x+q.x,p[i].y+q.y]];
 
 // Coordinates
-box_width=100; // x-dimension
+box_width=70; // x-dimension
 box_length=70; // y-dimension
 box_wall=2.5;
 play=5;
@@ -22,8 +26,8 @@ dc_jack_height=11;
 midi_jack_height=19.6;
 box_height=encoder_clearance+pcb_thickness+max(dc_jack_height,midi_jack_height)+2*box_wall+play; 
 echo("box height",box_height);
-corner_r=0.25;
-inner_box_wall_z=box_height-box_wall+corner_r;
+corner_r=1;
+inner_box_wall_z=box_height-box_wall;
 
 component_wall_margin=2.5; // minimum distance from inner wall to component
 jack_controls_margin=2; // minimum distance from jack components to lower components
@@ -139,7 +143,7 @@ lid_length=box_length-2*(2*corner_r+lid_gap);
 lid_width=box_width-2*(2*corner_r+lid_gap);
 // height of bottom part of lid (excluding tabs)
 lid_height=tab_top_z-tab_height;
-lid_round=1;
+lid_round=corner_r;
 lid_center=[box_width*0.5,box_length*0.5];
 lid_top_width=lid_width-2*(box_wall);
 lid_top_length=lid_length-2*(box_wall);
@@ -154,43 +158,24 @@ lid_shell_width=lid_width+2*lid_gap;
 // Detail
 $fn=20;
 
-module box_xy_corner() {
-    rotate([-90,0,0])
-        cylinder(r=corner_r,h=box_length);
-    rotate([0,90,0])
-        cylinder(r=corner_r,h=box_width);
-    sphere(corner_r);
-    translate([box_width,0,0])
-        sphere(corner_r);
-    translate([0,box_length,0])
-        sphere(corner_r);
-}
-module box_corner_posts() {
-    for (x=[0,box_width]) {
-        for (y=[0,box_length]) {
-            translate([x,y,0])
-                cylinder(r=corner_r,h=box_height);
-        }
-    }
-}
 module box_walls() {
-    for (x=[0,box_width-box_wall+2*corner_r]) {
-        translate([x-corner_r,0,0])
-            cube([box_wall,box_length,box_height]);
+    for (p=[[box_wall,box_length],[box_width,box_wall]]) {
+        rounded_cube(p.x,p.y,box_height,corner_r);
     }
-    for (y=[0,box_length-box_wall+2*corner_r]) {
-        translate([0,y-corner_r,0])
-            cube([box_width,box_wall,box_height]);
+    translate([box_width,box_length])
+    mirror([1,1,0])
+    for (p=[[box_wall,box_length],[box_width,box_wall]]) {
+        rounded_cube(p.x,p.y,box_height,corner_r);
     }
 }
 module box_top() {
     translate([0,0,inner_box_wall_z])
-    cube([box_width,box_length,box_wall]);
+    rounded_cube(box_width,box_length,box_wall,corner_r);
 }
 
 module midi_jack_holes() {
     for (x=midi_jack_center_x) {
-        translate([x,top_box_outer-corner_r,midi_jack_center_z])
+        translate([x,box_length-box_wall*0.5,midi_jack_center_z])
         rotate([90,0,0])
         cylinder(r=midi_jack_hole_radius,h=2*box_wall,center=true);
     }
