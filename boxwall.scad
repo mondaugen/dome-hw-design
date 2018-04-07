@@ -9,11 +9,15 @@ function polyRoundC(points,radius,fn=5,mode=0)=
  polyRound(points_w_radius(points,radius),fn,mode);
 // Mirror xy points around x axis
 function mirror_xy_x(p)=[for(i=[0:len(p)-1])[p[i].x*-1,p[i].y]];
+function mirror_xyz_x(p)=[for(i=[0:len(p)-1])[p[i].x*-1,p[i].y,p[i].z]];
 // Mirror xy points around y axis
 function mirror_xy_y(p)=[for(i=[0:len(p)-1])[p[i].x,p[i].y*-1]];
 function mirror_xy_xy(p)=mirror_xy_x(mirror_xy_y(p));
 // Translate xy points in a list by q
 function translate_xy(p,q)=[for(i=[0:len(p)-1])[p[i].x+q.x,p[i].y+q.y]];
+function trap_prism_points(w,l,h,in)=
+[for(z=[0,h],x=[-1,1],y=[-1,1]) [x*(w*0.5-(z==h?in:0)),y*(l*0.5-(z==h?in:0)),z] ];
+function trap_prism_vertices()=[[1,2,4],[3,0,5],[0,3,6],[2,1,7],[5,6,0],[7,4,1],[4,7,2],[6,5,3]];
 
 // Coordinates
 box_width=70; // x-dimension
@@ -125,26 +129,35 @@ pcb_screw_coords=[
 encoder_x=right_pcb_screw_x-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+encoder_width*0.5);
 
 // tabs to catch on walls
-tab_corner_r=.5;
-tab_top_z=20;
-tab_height=20-tab_corner_r;
+tab_corner_r=1;
+tab_height=20-box_wall;
+tab_top_z=tab_height+box_wall;
 tab_protrusion=2;
 tab_width=20;
 tab_points_y=[box_length*(1/4),box_length*(3/4)];
+function wall_tab_points(y)=[
+[0,-tab_width*0.5-tab_protrusion,tab_height],
+[0,+tab_width*0.5+tab_protrusion,tab_height],
+[tab_protrusion,+tab_width*0.5,tab_height],
+[tab_protrusion,-tab_width*0.5,tab_height],
+[0,-tab_width*0.5,0],
+[0,+tab_width*0.5,0]];
 
 // the bottom (closing the shape), called the "lid"
 // gap between box and lid
-lid_gap=0.2;
+lid_gap=0;
 // corner closest to origin
-lid_corner=2*corner_r+lid_gap;
+lid_corner=corner_r;//;2*corner_r+lid_gap;
 // length in y-direction
-lid_length=box_length-2*(2*corner_r+lid_gap);
+lid_length=box_length-2*(corner_r+lid_gap);
 // length in x-direction
-lid_width=box_width-2*(2*corner_r+lid_gap);
-// height of bottom part of lid (excluding tabs)
+lid_width=box_width-2*(corner_r+lid_gap);
+    // height of bottom part of lid (excluding tabs)
 lid_height=tab_top_z-tab_height;
-lid_round=corner_r;
-lid_center=[box_width*0.5,box_length*0.5];
+echo("lid_height",lid_height);
+lid_round=0.5;//corner_r;
+lid_center=[box_width*0.5,box_length*0.5,0];
+lid_inset=box_wall;
 lid_top_width=lid_width-2*(box_wall);
 lid_top_length=lid_length-2*(box_wall);
 lid_points=translate_xy([
@@ -156,7 +169,7 @@ lid_shell_length=lid_length+2*lid_gap;
 lid_shell_width=lid_width+2*lid_gap;
 
 // Detail
-$fn=20;
+$fn=10;
 
 module box_walls() {
     for (p=[[box_wall,box_length],[box_width,box_wall]]) {
@@ -314,83 +327,59 @@ module pcb_screw_shells () {
     }
 }
 
-//translate([box_wall-corner_r,0,-5]) cube([10,10,10]);
 module wall_tabs() {
-    leftout=box_wall-corner_r;
-    rightout=right_box_inner;
-    for (point=tab_points_y) {
-        translate([leftout,point+tab_width*0.5,0]) rotate([90,0,0])
-            translate([0,tab_top_z-tab_height,0])
-            linear_extrude(height=tab_width) {
-                polygon(polyRoundC([
-                            // dummy corners inside the wall
-                            //top
-                            [0,tab_height+tab_corner_r],
-                            [-tab_corner_r,tab_height+tab_corner_r],
-                            // bottom
-                            [-tab_corner_r,-tab_corner_r],
-                            [0,-tab_corner_r],
-                            // corners of shape
-                            [0,0],
-                            [tab_protrusion,tab_height],
-                            [0,tab_height]
-                            ],tab_corner_r,$fn,0));
-            }
-        translate([rightout,point+tab_width*0.5,0]) rotate([90,0,0])
-            translate([0,tab_top_z-tab_height,0])
-            linear_extrude(height=tab_width) {
-                polygon(polyRoundC(
-                            mirror_xy_x([
-                                // dummy corners inside the wall
-                                //top
-                                [0,tab_height+tab_corner_r],
-                                [-tab_corner_r,tab_height+tab_corner_r],
-                                // bottom
-                                [-tab_corner_r,-tab_corner_r],
-                                [0,-tab_corner_r],
-                                // corners of shape
-                                [0,0],
-                                [tab_protrusion,tab_height],
-                                [0,tab_height]
-                                ]),tab_corner_r,$fn,0));
-            }
-    }
+for(y=tab_points_y){
+for(x=[box_wall,box_width-box_wall]){
+translate([x,y,tab_top_z-tab_height])
+rounded_convex_polyhedron(
+x==box_width-box_wall?mirror_xyz_x(wall_tab_points(y)):wall_tab_points(y),
+[
+[1,4,3],
+[0,2,5],
+[1,3,5],
+[0,2,4],
+[0,3,5],
+[1,2,4]
+],
+[1e-3,1e-3,tab_corner_r,tab_corner_r,1e-3,1e-3]);
 }
+}
+}
+
+        
 
 module lid_solid () {
     translate(lid_center)
-    linear_extrude(height=box_wall,scale=[lid_top_width/lid_width,lid_top_length/lid_length],center=false) {
-        polygon(polyRoundC(lid_points,
-                    lid_round,
-                    $fn));
-    }
+hull () {
+    rounded_convex_set_vertices(trap_prism_points(lid_width,lid_length,lid_height,lid_inset),
+            trap_prism_vertices(),[for(i=[1:len(trap_prism_vertices())])lid_round]);
+}
+//    linear_extrude(height=box_wall,scale=[lid_top_width/lid_width,lid_top_length/lid_length],center=false) {
+//        polygon(polyRoundC(lid_points,
+//                    lid_round,
+//                    $fn));
+//    }
 }
 
 module lid_void () {
     translate(lid_center)
-    linear_extrude(height=box_wall,scale=[lid_top_width/lid_width,lid_top_length/lid_length],center=false) {
-        scale([lid_shell_width/lid_width,
-                lid_shell_length/lid_length]) 
-            polygon(polyRoundC(lid_points,
-                        lid_round,
-                        $fn));
-    }
+hull () {
+    rounded_convex_set_vertices(trap_prism_points(lid_width,lid_length,lid_height,lid_inset),
+            trap_prism_vertices(),[for(i=[1:len(trap_prism_vertices())])1e-3]);
+}
+//    translate(lid_center)
+//    linear_extrude(height=box_wall,scale=[lid_top_width/lid_width,lid_top_length/lid_length],center=false) {
+//        scale([lid_shell_width/lid_width,
+//                lid_shell_length/lid_length]) 
+//            polygon(polyRoundC(lid_points,
+//                        lid_round,
+//                        $fn));
+//    }
 }
 
 // The box
 difference () {
 union () {
-    box_xy_corner();
-    rotate([0,0,180])
-        translate([-box_width,-box_length,0])
-        box_xy_corner();
-    translate([0,0,box_height]) {
-        box_xy_corner();
-        rotate([0,0,180])
-            translate([-box_width,-box_length,0])
-            box_xy_corner();
-    }
-    box_corner_posts();
     difference () {
         box_walls();
         midi_jack_holes();
