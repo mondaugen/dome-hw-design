@@ -17,7 +17,7 @@ function mirror_xy_xy(p)=mirror_xy_x(mirror_xy_y(p));
 function translate_xy(p,q)=[for(i=[0:len(p)-1])[p[i].x+q.x,p[i].y+q.y]];
 function trap_prism_points(w,l,h,in)=
 [for(z=[0,h],x=[-1,1],y=[-1,1]) [x*(w*0.5-(z==h?in:0)),y*(l*0.5-(z==h?in:0)),z] ];
-function trap_prism_vertices()=[[1,2,4],[3,0,5],[0,3,6],[2,1,7],[5,6,0],[7,4,1],[4,7,2],[6,5,3]];
+trap_prism_vertices=[[1,2,4],[3,0,5],[0,3,6],[2,1,7],[5,6,0],[7,4,1],[4,7,2],[6,5,3]];
 
 // Coordinates
 box_width=70; // x-dimension
@@ -135,13 +135,59 @@ tab_top_z=tab_height+box_wall;
 tab_protrusion=2;
 tab_width=20;
 tab_points_y=[box_length*(1/4),box_length*(3/4)];
-function wall_tab_points(y)=[
+wall_tab_points=[
 [0,-tab_width*0.5-tab_protrusion,tab_height],
 [0,+tab_width*0.5+tab_protrusion,tab_height],
 [tab_protrusion,+tab_width*0.5,tab_height],
 [tab_protrusion,-tab_width*0.5,tab_height],
 [0,-tab_width*0.5,0],
-[0,+tab_width*0.5,0]];
+[0,+tab_width*0.5,0]
+];
+lid_tab_base_width=20;
+lid_tab_top_width=10;
+lid_tab_points=[
+[0,-tab_width*0.5-tab_protrusion,-box_wall],
+[0,+tab_width*0.5+tab_protrusion,-box_wall],
+[lid_tab_base_width,-tab_width*0.5,-box_wall],
+[lid_tab_base_width,+tab_width*0.5,-box_wall],
+[tab_protrusion,-tab_width*0.5-tab_protrusion,tab_top_z],
+[tab_protrusion,+tab_width*0.5+tab_protrusion,tab_top_z],
+[lid_tab_top_width,-tab_width*0.5,tab_top_z],
+[lid_tab_top_width,+tab_width*0.5,tab_top_z]
+];
+lid_tab_top_height=2; // height of hook-part on lid tab
+// TODO: This doesn't work, it doesn't like the 6 points on the same z, why?
+lid_tab_top_points=[
+[0,-tab_width*0.5,tab_top_z],
+[0,+tab_width*0.5,tab_top_z],
+[tab_protrusion,-(tab_width*0.5+tab_protrusion),tab_top_z-2e-2],
+[tab_protrusion,+(tab_width*0.5+tab_protrusion),tab_top_z-2e-2],
+[tab_protrusion,-tab_width*0.5,tab_top_z+lid_tab_top_height],
+[tab_protrusion,+tab_width*0.5,tab_top_z+lid_tab_top_height],
+[lid_tab_top_width,-tab_width*0.5,tab_top_z-1e-2],
+[lid_tab_top_width,+tab_width*0.5,tab_top_z-1e-2]
+];
+lid_tab_top_round=[tab_corner_r,tab_corner_r,1e-3,1e-3,tab_corner_r,tab_corner_r,1e-3,1e-3];
+lid_tab_vertices=
+[
+[1,4,3],
+[0,2,5],
+[1,3,5],
+[0,2,4],
+[0,3,5],
+[1,2,4]
+];
+lid_tab_round=[
+tab_corner_r,
+tab_corner_r,
+tab_corner_r,
+tab_corner_r,
+1e-3,
+1e-3,
+1e-3,
+1e-3
+];
+
 
 // the bottom (closing the shape), called the "lid"
 // gap between box and lid
@@ -149,17 +195,17 @@ lid_gap=0;
 // corner closest to origin
 lid_corner=corner_r;//;2*corner_r+lid_gap;
 // length in y-direction
-lid_length=box_length-2*(corner_r+lid_gap);
+lid_length=box_length;
 // length in x-direction
-lid_width=box_width-2*(corner_r+lid_gap);
+lid_width=box_width;
     // height of bottom part of lid (excluding tabs)
 lid_height=tab_top_z-tab_height;
 echo("lid_height",lid_height);
-lid_round=0.5;//corner_r;
-lid_center=[box_width*0.5,box_length*0.5,0];
-lid_inset=box_wall;
-lid_top_width=lid_width-2*(box_wall);
-lid_top_length=lid_length-2*(box_wall);
+lid_round=corner_r;
+lid_center=[box_width*0.5,box_length*0.5,-(box_wall+lid_gap)];
+lid_inset=0;
+lid_top_width=lid_width;
+lid_top_length=lid_length;
 lid_points=translate_xy([
                     [0,0],
                     [0+lid_width,0],
@@ -332,7 +378,7 @@ for(y=tab_points_y){
 for(x=[box_wall,box_width-box_wall]){
 translate([x,y,tab_top_z-tab_height])
 rounded_convex_polyhedron(
-x==box_width-box_wall?mirror_xyz_x(wall_tab_points(y)):wall_tab_points(y),
+x==box_width-box_wall?mirror_xyz_x(wall_tab_points):wall_tab_points,
 [
 [1,4,3],
 [0,2,5],
@@ -349,36 +395,40 @@ x==box_width-box_wall?mirror_xyz_x(wall_tab_points(y)):wall_tab_points(y),
         
 
 module lid_solid () {
+    // bottom part
     translate(lid_center)
-hull () {
-    rounded_convex_set_vertices(trap_prism_points(lid_width,lid_length,lid_height,lid_inset),
-            trap_prism_vertices(),[for(i=[1:len(trap_prism_vertices())])lid_round]);
-}
-//    linear_extrude(height=box_wall,scale=[lid_top_width/lid_width,lid_top_length/lid_length],center=false) {
-//        polygon(polyRoundC(lid_points,
-//                    lid_round,
-//                    $fn));
-//    }
+        hull () {
+            rounded_convex_set_vertices(trap_prism_points(lid_width,lid_length,lid_height,lid_inset),
+                    trap_prism_vertices,[for(i=[1:len(trap_prism_vertices)])lid_round]);
+        }
+    // tabs part
+    for (x=[box_wall,box_width-box_wall], y=tab_points_y) {
+        translate([x,y,0])
+            hull () {
+                rounded_convex_set_vertices(
+                        x==box_width-box_wall?mirror_xyz_x(lid_tab_points):lid_tab_points,
+                        trap_prism_vertices,lid_tab_round);
+            }
+        translate([x,y,0])
+        //hull () {
+            rounded_convex_set_vertices(
+                    x==box_width-box_wall?mirror_xyz_x(lid_tab_top_points):lid_tab_top_points,
+                    trap_prism_vertices,[for(i=[1:len(trap_prism_vertices)])1e-1]);//lid_tab_top_round);
+        //}
+
+    } 
 }
 
 module lid_void () {
     translate(lid_center)
-hull () {
-    rounded_convex_set_vertices(trap_prism_points(lid_width,lid_length,lid_height,lid_inset),
-            trap_prism_vertices(),[for(i=[1:len(trap_prism_vertices())])1e-3]);
-}
-//    translate(lid_center)
-//    linear_extrude(height=box_wall,scale=[lid_top_width/lid_width,lid_top_length/lid_length],center=false) {
-//        scale([lid_shell_width/lid_width,
-//                lid_shell_length/lid_length]) 
-//            polygon(polyRoundC(lid_points,
-//                        lid_round,
-//                        $fn));
-//    }
+        hull () {
+            rounded_convex_set_vertices(trap_prism_points(lid_width,lid_length,lid_height,lid_inset),
+                    trap_prism_vertices,[for(i=[1:len(trap_prism_vertices)])1e-3]);
+        }
 }
 
 // The box
-difference () {
+*difference () {
 union () {
     difference () {
         box_walls();
