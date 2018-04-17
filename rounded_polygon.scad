@@ -1,3 +1,5 @@
+use <corner_sphere.scad>
+
 module rounded_corner(
     point_left,
     point_center,
@@ -57,14 +59,14 @@ function rounded_3d_inside_corner(
     r, // radius of circle at corner
 )=
 let(
-   points_=normalize_l(vadd(points,-center)),
-   M=midpoint(points_),
-   N=cross(points_[0],points_[1]),
-   a=r/norm(M-(M-proj_v(M,N)))
+   points_=normalize_l(vadd(points,-center))
+//   M=midpoint(points_),
+//   N=cross(points_[0],points_[1]),
+//   a=r/norm(M-(M-proj_v(M,N)))
    //why this doesn't work, I don't know
    //proj_v(M,points_[0])+proj_v(M,points_[1])), shouldn't it be the same as
    //projecting onto the plane spanned by points_[0] and points_[1] ?
-)a*M+center;
+)center+corner_sphere(points_[0],points_[1],points_[2],r);
 //sum(vmulc(points_,r),result=[0,0,0])+center;//a*M+center;
 
 // Gives a bunch of spheres describing the outside of the convex hull

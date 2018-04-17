@@ -35,10 +35,13 @@ r=eval(sys.argv[4])
 
 # Mid point of all vectors
 M=(A+B+C)/3.
+
+# Cross products
 a_=np.matrix(cross_3(A,B))
 b_=np.matrix(cross_3(A,C))
 c_=np.matrix(cross_3(B,C))
 
+# Multiply by -1 if angle with midpoint is obtuse
 a=a_*is_acute(a_,M)
 b=b_*is_acute(b_,M)
 c=c_*is_acute(c_,M)
@@ -48,7 +51,5 @@ print b
 print c
 print np.c_[a,b,c].T
 u1=la.solve(np.c_[a,b,c].T,np.c_[[la.norm(a),la.norm(b),la.norm(c)]]*r)
-#u2=la.solve(np.c_[a,c,b].T,np.c_[[la.norm(a),la.norm(c),la.norm(b)]]*r)
 
 print u1
-#print u2
