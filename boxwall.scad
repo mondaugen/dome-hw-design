@@ -17,7 +17,27 @@ function mirror_xy_xy(p)=mirror_xy_x(mirror_xy_y(p));
 function translate_xy(p,q)=[for(i=[0:len(p)-1])[p[i].x+q.x,p[i].y+q.y]];
 function trap_prism_points(w,l,h,in)=
 [for(z=[0,h],x=[-1,1],y=[-1,1]) [x*(w*0.5-(z==h?in:0)),y*(l*0.5-(z==h?in:0)),z] ];
-trap_prism_vertices=[[1,2,4],[3,0,5],[0,3,6],[2,1,7],[5,6,0],[7,4,1],[4,7,2],[6,5,3]];
+trap_prism_vertices=[
+[1,2,4 ], // 0
+[3,0,5 ], // 1
+[0,3,6 ], // 2
+[2,1,7 ], // 3
+[5,6,0 ], // 4
+[7,4,1], // 5
+[4,7,2], // 6
+[6,5,3] // 7
+];
+top_trap_prism_vertices=[
+[1,2,4 ], // 0
+[3,0,5 ], // 1
+[0,4,6 ], // 2
+[5,1,7 ], // 3
+[2,6,0 ], // 4
+[7,3,1], // 5
+[4,7,2], // 6
+[6,5,3] // 7
+];
+
 
 // Coordinates
 box_width=70; // x-dimension
@@ -146,28 +166,40 @@ wall_tab_points=[
 lid_tab_base_width=20;
 lid_tab_top_width=10;
 lid_tab_points=[
-[0,-tab_width*0.5-tab_protrusion,-box_wall],
-[0,+tab_width*0.5+tab_protrusion,-box_wall],
-[lid_tab_base_width,-tab_width*0.5,-box_wall],
-[lid_tab_base_width,+tab_width*0.5,-box_wall],
+[0,-tab_width*0.5-tab_protrusion,-box_wall+1e-3],
+[0,+tab_width*0.5+tab_protrusion,-box_wall+1e-3],
+[lid_tab_base_width,-tab_width*0.5,-box_wall+1e-3],
+[lid_tab_base_width,+tab_width*0.5,-box_wall+1e-3],
 [tab_protrusion,-tab_width*0.5-tab_protrusion,tab_top_z],
 [tab_protrusion,+tab_width*0.5+tab_protrusion,tab_top_z],
 [lid_tab_top_width,-tab_width*0.5,tab_top_z],
 [lid_tab_top_width,+tab_width*0.5,tab_top_z]
 ];
+// points of holes in tabs
+// relative to the tab void points
+lid_tab_void_points=[
+[0,-(tab_width*0.5+tab_protrusion-box_wall),-box_wall-1e-2],
+[0,+tab_width*0.5+tab_protrusion-box_wall,-box_wall-1e-2],
+[lid_tab_base_width-2*box_wall,-(tab_width*0.5-box_wall),-box_wall-1e-2],
+[lid_tab_base_width-2*box_wall,+tab_width*0.5-box_wall,-box_wall-1e-2],
+[tab_protrusion,-(tab_width*0.5+tab_protrusion-box_wall),tab_top_z-box_wall],
+[tab_protrusion,+tab_width*0.5+tab_protrusion-box_wall,tab_top_z-box_wall],
+[lid_tab_top_width-2*box_wall,-(tab_width*0.5-box_wall),tab_top_z-box_wall],
+[lid_tab_top_width-2*box_wall,+tab_width*0.5-box_wall,tab_top_z-box_wall]
+];
 lid_tab_top_height=2; // height of hook-part on lid tab
 // TODO: This doesn't work, it doesn't like the 6 points on the same z, why?
 lid_tab_top_points=[
-[0,-tab_width*0.5,tab_top_z],
-[0,+tab_width*0.5,tab_top_z],
-[tab_protrusion,-(tab_width*0.5+tab_protrusion),tab_top_z-2e-2],
-[tab_protrusion,+(tab_width*0.5+tab_protrusion),tab_top_z-2e-2],
-[tab_protrusion,-tab_width*0.5,tab_top_z+lid_tab_top_height],
-[tab_protrusion,+tab_width*0.5,tab_top_z+lid_tab_top_height],
-[lid_tab_top_width,-tab_width*0.5,tab_top_z-1e-2],
-[lid_tab_top_width,+tab_width*0.5,tab_top_z-1e-2]
+[0,-tab_width*0.5,tab_top_z], // 0
+[0,+tab_width*0.5,tab_top_z], // 1
+[tab_protrusion,-(tab_width*0.5+tab_protrusion),tab_top_z-1e-3], // 2 
+[tab_protrusion,+(tab_width*0.5+tab_protrusion),tab_top_z-1e-3],// 3 
+[tab_protrusion,-tab_width*0.5,tab_top_z+lid_tab_top_height], // 4
+[tab_protrusion,+tab_width*0.5,tab_top_z+lid_tab_top_height], // 5
+[lid_tab_top_width,-tab_width*0.5,tab_top_z], // 6 
+[lid_tab_top_width,+tab_width*0.5,tab_top_z] // 7
 ];
-lid_tab_top_round=[tab_corner_r,tab_corner_r,1e-3,1e-3,tab_corner_r,tab_corner_r,1e-3,1e-3];
+lid_tab_top_round=[0.25,0.25,1e-4,1e-4,0.5,0.5,1e-4,1e-4];
 lid_tab_vertices=
 [
 [1,4,3],
@@ -178,10 +210,10 @@ lid_tab_vertices=
 [1,2,4]
 ];
 lid_tab_round=[
-tab_corner_r,
-tab_corner_r,
-tab_corner_r,
-tab_corner_r,
+1e-3,//tab_corner_r,
+1e-3,//tab_corner_r,
+1e-3,//tab_corner_r,
+1e-3,//tab_corner_r,
 1e-3,
 1e-3,
 1e-3,
@@ -410,11 +442,12 @@ module lid_solid () {
                         trap_prism_vertices,lid_tab_round);
             }
         translate([x,y,0])
-        //hull () {
+        hull () {
             rounded_convex_set_vertices(
                     x==box_width-box_wall?mirror_xyz_x(lid_tab_top_points):lid_tab_top_points,
-                    trap_prism_vertices,[for(i=[1:len(trap_prism_vertices)])1e-1]);//lid_tab_top_round);
-        //}
+                    top_trap_prism_vertices,//[for(i=[1:len(top_trap_prism_vertices)])1e-4]);//
+                    lid_tab_top_round);
+        }
 
     } 
 }
@@ -425,6 +458,18 @@ module lid_void () {
             rounded_convex_set_vertices(trap_prism_points(lid_width,lid_length,lid_height,lid_inset),
                     trap_prism_vertices,[for(i=[1:len(trap_prism_vertices)])1e-3]);
         }
+}
+
+module tab_void () {
+    // tabs part
+    for (x=[2*box_wall,box_width-2*box_wall], y=tab_points_y) {
+        translate([x,y,0])
+            hull () {
+                rounded_convex_set_vertices(
+                        x==box_width-2*box_wall?mirror_xyz_x(lid_tab_void_points):lid_tab_void_points,
+                        trap_prism_vertices,lid_tab_round);
+            }
+    } 
 }
 
 // The box
@@ -457,8 +502,9 @@ union () {
 }
 
 // The lid
-union () {
+difference () {
     lid_solid();
+    tab_void ();
 }
 
 module sanity_check_width () {

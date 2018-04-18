@@ -59,7 +59,8 @@ function rounded_3d_inside_corner(
     r, // radius of circle at corner
 )=
 let(
-   points_=normalize_l(vadd(points,-center))
+   //points_=normalize_l(vadd(points,-center))
+   points_=vadd(points,-center)
 //   M=midpoint(points_),
 //   N=cross(points_[0],points_[1]),
 //   a=r/norm(M-(M-proj_v(M,N)))
