@@ -49,6 +49,9 @@ pcb_thickness=1.575;
 dc_jack_height=11;
 midi_jack_height=19.6;
 box_height=encoder_clearance+pcb_thickness+max(dc_jack_height,midi_jack_height)+2*box_wall+play; 
+pcb_width=box_width-2*(box_wall);
+pcb_length=box_length-2*(box_wall);
+
 echo("box height",box_height);
 corner_r=1;
 inner_box_wall_z=box_height-box_wall;
@@ -76,7 +79,7 @@ dc_jack_width=9;
 dc_jack_center_x=midi_jack_center_x[len(midi_jack_center_x)-1]+midi_jack_width*0.5+dc_jack_spacing+dc_jack_width*0.5;
 dc_jack_center_z=box_height-box_wall-encoder_clearance-pcb_thickness-dc_jack_height*0.5;
 dc_jack_depth=14.2;
-dc_jack_protrusion=7; // how far DC jack hangs off of PCB
+dc_jack_protrusion=box_wall; // how far DC jack hangs off of PCB
 dc_jack_intrusion=dc_jack_depth-dc_jack_protrusion; // how far dc jack goes into PCB
 jack_y_occupation=max([dc_jack_intrusion,midi_jack_depth]);
 
@@ -143,7 +146,8 @@ pcb_screw_coords=[
         led_block_y+led_block_height-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
     [box_wall-corner_r+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius),
         box_wall-corner_r+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
-    [right_pcb_screw_x,brc_buttons_y+button_height*0.5+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width]
+    [right_pcb_screw_x,
+        brc_buttons_y+button_height*0.5+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+2]
 ];
 
 encoder_x=right_pcb_screw_x-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+encoder_width*0.5);
@@ -154,7 +158,7 @@ tab_height=20-box_wall;
 tab_top_z=tab_height+box_wall;
 tab_protrusion=2;
 tab_width=20;
-tab_points_y=[box_length*(1/4),box_length*(3/4)];
+tab_points_y=[box_length*0.5];
 wall_tab_points=[
 [0,-tab_width*0.5-tab_protrusion,tab_height],
 [0,+tab_width*0.5+tab_protrusion,tab_height],
@@ -472,39 +476,62 @@ module tab_void () {
     } 
 }
 
+module sanity_check_circuit ()
+{
+    color ("yellow",0.25) {
+        // draw ciruit board
+        translate([box_wall,box_wall,pcb_top_z-pcb_thickness])
+            cube([pcb_width,pcb_length,pcb_thickness]);
+        // draw MIDI jacks
+        for (x=midi_jack_center_x) {
+            translate([x-midi_jack_width*0.5,box_length-box_wall-midi_jack_depth,pcb_bottom_z-midi_jack_height])
+                cube([midi_jack_width,midi_jack_depth,midi_jack_height]); 
+        }
+        // draw DC jack
+        translate([dc_jack_center_x-dc_jack_width*0.5,
+                   box_length-box_wall-dc_jack_intrusion,
+                   dc_jack_center_z-dc_jack_height*0.5])
+        cube([dc_jack_width,dc_jack_depth,dc_jack_height]);
+    }
+}
+
 // The box
-*difference () {
-union () {
-    difference () {
-        box_walls();
-        midi_jack_holes();
-        dc_jack_hole();
-    }
+color ("green",0.25) {
     difference () {
         union () {
-            led_block();
-            box_top();
-            pcb_screw_shells();
-            wall_tabs();
+            difference () {
+                box_walls();
+                midi_jack_holes();
+                dc_jack_hole();
+            }
+            difference () {
+                union () {
+                    led_block();
+                    box_top();
+                    pcb_screw_shells();
+                    wall_tabs();
+                }
+                union () {
+                    led_holes();
+                    encoder_holes();
+                    button_holes();
+                    pcb_screw_holes();
+                }
+            }
         }
         union () {
-            led_holes();
-            encoder_holes();
-            button_holes();
-            pcb_screw_holes();
+            translate([0,0,-0.001])
+                lid_void ();
         }
     }
-}
-union () {
-    translate([0,0,-0.001])
-        lid_void ();
-}
 }
 
 // The lid
-difference () {
-    lid_solid();
-    tab_void ();
+*color ("green",0.25) {
+    difference () {
+        lid_solid();
+        tab_void ();
+    }
 }
 
 module sanity_check_width () {
@@ -522,6 +549,7 @@ module sanity_check_z () {
     cube([10,10,inner_box_wall_z]);
 }
 
+sanity_check_circuit();
 //sanity_check_width();
 //sanity_check_height();
 //sanity_check_z();
