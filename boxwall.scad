@@ -44,7 +44,8 @@ box_width=70; // x-dimension
 box_length=70; // y-dimension
 box_wall=2.5;
 play=5;
-encoder_clearance=7;
+encoder_height=6.6;
+encoder_clearance=encoder_height;
 pcb_thickness=1.575;
 dc_jack_height=11;
 midi_jack_height=19.6;
@@ -83,6 +84,17 @@ dc_jack_protrusion=box_wall; // how far DC jack hangs off of PCB
 dc_jack_intrusion=dc_jack_depth-dc_jack_protrusion; // how far dc jack goes into PCB
 jack_y_occupation=max([dc_jack_intrusion,midi_jack_depth]);
 
+encoder_margin=2.5;
+encoder_length=13.75;
+encoder_top_to_center=7.25;
+encoder_width=12;
+encoder_hole_radius=6.35*0.5;
+encoder_y=[
+    box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center),
+    box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center
+        +encoder_length+encoder_margin),
+];
+
 pcb_top_inner_wall_dist=encoder_clearance; // distance between top of pcb and inner top wall
 pcb_top_z=inner_box_wall_z-pcb_top_inner_wall_dist;
 pcb_bottom_z=pcb_top_z-pcb_thickness;
@@ -108,17 +120,6 @@ led_block_y=top_box_outer-(box_wall+jack_y_occupation
         +jack_controls_margin+led_block_height);
 led_block_z=pcb_top_z;//box_height-led_hole_depth-led_hole_cover;
 
-
-encoder_margin=2.5;
-encoder_length=13.75;
-encoder_top_to_center=7.25;
-encoder_width=12;
-encoder_hole_radius=6.35*0.5;
-encoder_y=[
-    box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center),
-    box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center
-        +encoder_length+encoder_margin),
-];
 
 button_width=10;
 button_height=10;
@@ -489,9 +490,14 @@ module sanity_check_circuit ()
         }
         // draw DC jack
         translate([dc_jack_center_x-dc_jack_width*0.5,
-                   box_length-box_wall-dc_jack_intrusion,
-                   dc_jack_center_z-dc_jack_height*0.5])
-        cube([dc_jack_width,dc_jack_depth,dc_jack_height]);
+                box_length-box_wall-dc_jack_intrusion,
+                dc_jack_center_z-dc_jack_height*0.5])
+            cube([dc_jack_width,dc_jack_depth,dc_jack_height]);
+        // draw encoders
+        for (y=encoder_y) {
+            translate([encoder_x-encoder_width*0.5,y+encoder_top_to_center-encoder_length,pcb_top_z])
+                cube([encoder_width,encoder_length,encoder_height]);
+        }
     }
 }
 
