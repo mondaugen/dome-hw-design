@@ -44,6 +44,14 @@ box_width=70; // x-dimension
 box_length=70; // y-dimension
 box_wall=2.5;
 play=5;
+encoder_holder_height=1;
+encoder_holder_width=2.1;
+encoder_holder_depth=1;
+// Encoder holder center is this many mm directly below encoder shaft center (in
+// y- dimension)
+encoder_holder_distance_shaft_center=6;
+encoder_shaft_radius=7*0.5;
+encoder_shaft_height=20;
 encoder_height=6.6;
 encoder_clearance=encoder_height;
 pcb_thickness=1.575;
@@ -60,7 +68,7 @@ inner_box_wall_z=box_height-box_wall;
 component_wall_margin=2.5; // minimum distance from inner wall to component
 jack_controls_margin=2; // minimum distance from jack components to lower components
 
-right_box_outer=box_width+corner_r;
+right_box_outer=box_width;
 right_box_inner=right_box_outer-box_wall;
 top_box_outer=box_length+corner_r;
 
@@ -88,7 +96,8 @@ encoder_margin=2.5;
 encoder_length=13.75;
 encoder_top_to_center=7.25;
 encoder_width=12;
-encoder_hole_radius=6.35*0.5;
+encoder_hole_shaft_gap=0.5;
+encoder_hole_radius=encoder_shaft_radius+encoder_hole_shaft_gap;
 encoder_y=[
     box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center),
     box_length-(box_wall+jack_y_occupation+jack_controls_margin+encoder_top_to_center
@@ -141,17 +150,19 @@ pcb_screw_hole_shell_width=3;
 pcb_screw_hole_z=pcb_top_z-pcb_thickness;
 right_pcb_screw_x=right_box_outer-box_wall-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius);
 pcb_screw_coords=[
-    [box_wall+pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius-corner_r,
+    [box_wall+pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius,
         led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
     [led_block_x+led_block_width+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width,
         led_block_y+led_block_height-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
-    [box_wall-corner_r+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius),
-        box_wall-corner_r+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
+    [box_wall+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius),
+        box_wall+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
     [right_pcb_screw_x,
         brc_buttons_y+button_height*0.5+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+2]
 ];
 
-encoder_x=right_pcb_screw_x-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width+encoder_width*0.5);
+encoder_screw_shell_gap=2;
+encoder_x=right_pcb_screw_x-(pcb_screw_pilot_hole_radius
+        +pcb_screw_hole_shell_width+encoder_width*0.5+encoder_screw_shell_gap);
 
 // tabs to catch on walls
 tab_corner_r=1;
@@ -342,7 +353,14 @@ module encoder_holes () {
     for (y=encoder_y) {
         translate([encoder_x,y,box_height-box_wall*0.5])
             cylinder(r=encoder_hole_radius,h=2*box_wall,center=true);
+            // The holder
+        translate([encoder_x,y,box_height-box_wall])
+            translate([-encoder_holder_width*0.5,
+                       -encoder_holder_distance_shaft_center-0.5*encoder_holder_height,
+                       0])
+            cube([encoder_holder_width,encoder_holder_depth,encoder_holder_height]);
     }
+
 }
 
 module rounded_square(
@@ -481,7 +499,7 @@ module sanity_check_circuit ()
 {
     color ("yellow",0.25) {
         // draw ciruit board
-        translate([box_wall,box_wall,pcb_top_z-pcb_thickness])
+        *translate([box_wall,box_wall,pcb_top_z-pcb_thickness])
             cube([pcb_width,pcb_length,pcb_thickness]);
         // draw MIDI jacks
         for (x=midi_jack_center_x) {
@@ -497,6 +515,11 @@ module sanity_check_circuit ()
         for (y=encoder_y) {
             translate([encoder_x-encoder_width*0.5,y+encoder_top_to_center-encoder_length,pcb_top_z])
                 cube([encoder_width,encoder_length,encoder_height]);
+        }
+        // draw encoder shaft
+        for (y = encoder_y) {
+            translate([encoder_x,y,pcb_top_z+encoder_height])
+                cylinder(h=encoder_shaft_height,r=encoder_shaft_radius);
         }
     }
 }
