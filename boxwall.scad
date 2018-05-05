@@ -578,7 +578,7 @@ module sanity_check_z () {
     cube([10,10,inner_box_wall_z]);
 }
 
-sanity_check_circuit();
+//sanity_check_circuit();
 //sanity_check_width();
 //sanity_check_height();
 //sanity_check_z();
