@@ -52,8 +52,12 @@ translate([0,0,_key_bottom_z])
 translate([0,0,_key_bottom_z-1e-2])
     cylinder(r=button_shaft_diameter()*0.5,h=_shaft_dent_height);
 }
-
 }
+
+function button_key_dims(height)=[
+button_dims().x,
+button_dims().y,
+height-(_button_dims.z-_shaft_dent_height)+wall_thickness()];
 
 // is as for button_key_solid
 module button_key_shaft_solid (height,text="A")
@@ -61,13 +65,21 @@ module button_key_shaft_solid (height,text="A")
 difference () {
 rounded_shaft([0,0,height*0.5],[_width,_length,height],
 button_corner_r(),wall_thickness());
-translate([0,0,-5e-3])
+//translate([0,0,-5e-3])
+//resize([_width+2*wall_thickness()+1e-2,_length+2*wall_thickness()+1e-2,height+1e-2])
 _button_key_guides(height+1e-2);
 }
 }
 
+function button_key_shaft_dims(height)=[
+button_dims().x+2*wall_thickness(),
+button_dims().y+2*wall_thickness(),
+height];
+
 $fn=30;
 
 // key test
+translate([_width*0.5+wall_thickness(),_length*0.5+wall_thickness(),0]){
 button_key_solid(10);
-*button_key_shaft_solid(10);
+button_key_shaft_solid(10);
+}
