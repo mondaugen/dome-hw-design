@@ -1,3 +1,5 @@
+import itertools
+import sys
 # Routines for assembling parts together
 
 class point_t:
@@ -11,6 +13,9 @@ class point_t:
         self.y=y
         self.z=z
 
+    def as_tuple(self):
+        return (self.x,self.y,self.z)
+
     def __add__(self,other):
         if isinstance(other,point_t):
             return point_t(self.x + other.x,
@@ -19,10 +24,14 @@ class point_t:
         else:
             return NotImplemented
 
+    def __string__(self):
+        return "({self.x},{self.y},{self.z})".format(self=self)
+
 class part_t:
 
-    def __init__(self,coords=(0,0,0)):
+    def __init__(self,coords=(0,0,0),dims=(1,1,1)):
         self.translation=point_t(*coords)
+        self.dims=point_t(*dims)
 
     def get_local_rect_points(self):
         return NotImplemented
@@ -32,26 +41,25 @@ class part_t:
         return [p + self.translation for p in points]
 
     def translate(self,coords):
-        self.translate += point_t(*coords)
+        self.translation += point_t(*coords)
 
     def oscad_draw(self):
         return NotImplemented
 
-class cube_t(part_t)
+class cube_t(part_t):
 
     """
     More a rectangular prism than a cube but cube is easier to write.
     """
 
     def __init__(self,coords=(0,0,0),dims=(1,1,1)):
-        part_t.__init__(self,coords)
-        self.dims=point_t(dims)
+        part_t.__init__(self,coords,dims)
 
     def get_local_rect_points(self):
-        return [point_t(p) for p in itertools.product(
-            [self.translation.x,self.translation.x+self.dims.x],
-            [self.translation.y,self.translation.y+self.dims.y],
-            [self.translation.z,self.translation.z+self.dims.z])]
+        return [point_t(*p) for p in itertools.product(
+            [0,self.dims.x],
+            [0,self.dims.y],
+            [0,self.dims.z])]
 
     def oscad_draw(self):
         return(
@@ -66,6 +74,9 @@ def extreme_points(points,corner=(None,None,None),dims=(None,None,None)):
     for c,d,co in zip(corner,dims,['x','y','z']):
         if c and d:
             points=filter(lambda p: c <= getattr(p,co) <= (c+d),points)
+    points = list(points)
+    if not points:
+        return (None,None)
     # Find extreme points in thurrr
     mins=tuple([sorted(points,key=lambda p: getattr(p,co))[0] for co in
         ['x','y','z']])
@@ -76,35 +87,44 @@ def extreme_points(points,corner=(None,None,None),dims=(None,None,None)):
 
 sticky_dims={
     # dimension indices, dimension names, include part dimension or not
-    'e':(1,2,'y','z',0)
-    'w':(1,2,'y','z',1)
-    'n':(0,2,'x','z',0)
-    's':(0,2,'x','z',1)
-    't':(0,2,'x','z',0)
-    'b':(0,2,'x','z',1)
+    'e':(1,2,'y','z',0),
+    'w':(1,2,'y','z',1),
+    'n':(0,2,'x','z',0),
+    's':(0,2,'x','z',1),
+    't':(0,1,'x','y',0),
+    'b':(0,1,'x','y',1),
 }
 
-def _sd_get_corner(ep,part,pos,align,points):
+def _sd_get_corner(ep,part,pos,align,points,useconvexhull):
 
-    corner=(None,None,None)
+    corner=[None,None,None]
     a,b,ac,bc,pd=sticky_dims[pos]
 
     for p,q in zip([a,b],[ac,bc]):
         if align[p] == '-':
             corner[p] = getattr(ep[0][p],q)
-        elif align[p] == '+'
-            corner[p] = getattr(ep[1][p],q)
+        elif align[p] == '+':
+            corner[p] = getattr(ep[1][p],q)-getattr(part.dims,q)
         elif align[p] == '.':
-            corner[p] = getattr(ep[0][p],q)+getattr(ep[1][p],q)-getattr(part.dims,q)
+            # TODO: This doesn't work because there isn't guaranteed to be
+            # points in the rectangular prism going through the center of a
+            # shape
+            corner[p] = (getattr(ep[0][p],q)+getattr(ep[1][p],q)-getattr(part.dims,q))*0.5
         else:
             raise Exception('Unknown alignment %s' % (align[p],))
 
     p=list(set([0,1,2])-set([a])-set([b]))[0]
     q=list(set(['x','y','z'])-set([ac])-set([bc]))[0]
+    sys.stderr.write("corner: "+str(corner)+'\n')
+    sys.stderr.write("p: "+str(p)+'\n')
+    sys.stderr.write("q: "+str(q)+'\n')
+    sys.stderr.write("part.dims: "+str(part.dims.as_tuple())+'\n')
     if useconvexhull:
-        corner[p]=extreme_points(points)[1-pd][p].x-pd*part.dims.x
+        corner[p]=getattr(extreme_points(points)[1-pd][p]
+                ,q)-pd*getattr(part.dims,q)
     else:
-        corner[p]=extreme_points(points,corner,part.dims)[1-pd][p].x-pd*part.dims.x
+        corner[p]=getattr(extreme_points(points,
+            corner,part.dims.as_tuple())[1-pd][p],q)-pd*getattr(part.dims,q)
 
     return corner
 
@@ -150,12 +170,14 @@ def stick_on_part(
         points += p.get_rect_points()
 
     ep=extreme_points(points)
-    corner=_sd_get_corner(ep,part,pos,align,points)
+    mi,ma=ep
+    sys.stderr.write("min\n")
+    for m in mi:
+        sys.stderr.write(m.__string__()+'\n')
+    sys.stderr.write("max\n")
+    for m in ma:
+        sys.stderr.write(m.__string__()+'\n')
+    corner=_sd_get_corner(ep,part,pos,align,points,useconvexhull)
 
     part.translate(corner)
     return parts + [part]
-
-p1=point_t(1,2,3)
-p2=point_t(1,-1,2)
-p3=p1+p2
-print("x=%f y=%f z=%f" % (p3.x,p3.y,p3.z))
