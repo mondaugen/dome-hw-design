@@ -29,9 +29,15 @@ class point_t:
 
 class part_t:
 
-    def __init__(self,coords=(0,0,0),dims=(1,1,1)):
+    def __init__(self,coords=(0,0,0)):
         self.translation=point_t(*coords)
-        self.dims=point_t(*dims)
+
+    def get_dims(self):
+        """
+        Should return a point whose coordinates represent the object's size in
+        that dimension.
+        """
+        return NotImplemented
 
     def get_local_rect_points(self):
         return NotImplemented
@@ -43,38 +49,105 @@ class part_t:
     def translate(self,coords):
         self.translation += point_t(*coords)
 
-    def oscad_draw(self):
+    def oscad_draw_solid(self):
+        """
+        Draw the object that will be unioned with the rest of the drawing.
+        """
         return NotImplemented
+
+    def oscad_draw_void(self):
+        """
+        Draw the object that will be subtracted from the rest of the drawing.
+        """
+        return NotImplemented
+
+def convert_to_gap_dict(gap):
+    """
+    A gap dict is a dictionary with the keys 'n','s','e','w','t','b' where each
+    value specifies the gap on the north, south, east, west, top or bottom side
+    respectively.
+    
+    This function makes it easy to create a gap dict from different kinds of
+    values.
+
+    If gap is a single number then a gap dictionary is made where each entry is
+    equal to that number.
+
+    If gap is a tuple t, then 'n','s' = t[1], 'e','w'=t[0], 't','b'=t[2].
+
+    Otherwise, if not a dictionary with the right keys, this function fails.
+    """
+    keys=['n','s','e','w','t','b']
+    if isinstance(gap,type(int())) or isinstance(gap,type(float())):
+        d=dict()
+        for k in keys:
+            d[k] = gap
+        return d
+    if isinstance(gap,type(dict())) and (set(gap.keys()) == set(keys)):
+        return gap
+    d=dict()
+    d['n'] = gap[1]
+    d['s'] = gap[1]
+    d['e'] = gap[0]
+    d['w'] = gap[0]
+    d['t'] = gap[2]
+    d['b'] = gap[2]
+    return d
 
 class cube_t(part_t):
 
     """
     More a rectangular prism than a cube but cube is easier to write.
+    dims is the size of the actual cube
+    gap is added to dims when get_dims() is called so that the gap is taken into
+    account when packing the shape with other parts.
+    when drawn the cube is the size of dims + the gap in each dimension
     """
 
-    def __init__(self,coords=(0,0,0),dims=(1,1,1)):
-        part_t.__init__(self,coords,dims)
+    def __init__(self,coords=(0,0,0),dims=(1,1,1),gap=0):
+        part_t.__init__(self,coords)
+        self.gap=convert_to_gap_dict(gap)
+        # Dimesions of the actually drawn cube
+        self.dims=dims
+
+    def get_dims(self):
+        """
+        Dimensions of the cube and the gap around it.
+        """
+        ret = point_t(*self.dims)
+        ret.x += self.gap['e'] + self.gap['w']
+        ret.y += self.gap['n'] + self.gap['s']
+        ret.z += self.gap['t'] + self.gap['b']
+        return ret
 
     def get_local_rect_points(self):
+        dims = self.get_dims()
         return [point_t(*p) for p in itertools.product(
-            [0,self.dims.x],
-            [0,self.dims.y],
-            [0,self.dims.z])]
+            [0,dims.x],
+            [0,dims.y],
+            [0,dims.z])]
 
-    def oscad_draw(self):
+    def get_trans_to_solid(self):
+        gap_trans=[self.gap[k] for k in ['w','s','b']]
+        return self.translation + point_t(*gap_trans)
+
+    def oscad_draw_solid(self):
+        gap_trans=self.get_trans_to_solid()
         return(
 """
-translate([{self.translation.x},{self.translation.y},{self.translation.z}])
-    cube([{self.dims.x},{self.dims.y},{self.dims.z}]);
-""".format(self=self))
+    translate([{gap_trans.x},{gap_trans.y},{gap_trans.z}])
+    cube([{dims[0]},{dims[1]},{dims[2]}]);
+""".format(self=self,dims=self.dims,gap_trans=gap_trans))
 
+    def oscad_draw_void(self):
+        return ""
 
 def extreme_points(points,corner=(None,None,None),dims=(None,None,None)):
     # Filter out points not in cube described by corner and dims
     for c,d,co in zip(corner,dims,['x','y','z']):
         if c and d:
             points=filter(lambda p: c <= getattr(p,co) <= (c+d),points)
-    points = list(points)
+            points = list(points)
     if not points:
         return (None,None)
     # Find extreme points in thurrr
@@ -104,12 +177,12 @@ def _sd_get_corner(ep,part,pos,align,points,useconvexhull):
         if align[p] == '-':
             corner[p] = getattr(ep[0][p],q)
         elif align[p] == '+':
-            corner[p] = getattr(ep[1][p],q)-getattr(part.dims,q)
+            corner[p] = getattr(ep[1][p],q)-getattr(part.get_dims(),q)
         elif align[p] == '.':
             # TODO: This doesn't work because there isn't guaranteed to be
             # points in the rectangular prism going through the center of a
             # shape
-            corner[p] = (getattr(ep[0][p],q)+getattr(ep[1][p],q)-getattr(part.dims,q))*0.5
+            corner[p] = (getattr(ep[0][p],q)+getattr(ep[1][p],q)-getattr(part.get_dims(),q))*0.5
         else:
             raise Exception('Unknown alignment %s' % (align[p],))
 
@@ -118,13 +191,13 @@ def _sd_get_corner(ep,part,pos,align,points,useconvexhull):
     sys.stderr.write("corner: "+str(corner)+'\n')
     sys.stderr.write("p: "+str(p)+'\n')
     sys.stderr.write("q: "+str(q)+'\n')
-    sys.stderr.write("part.dims: "+str(part.dims.as_tuple())+'\n')
+    sys.stderr.write("part.dims: "+str(part.get_dims().as_tuple())+'\n')
     if useconvexhull:
         corner[p]=getattr(extreme_points(points)[1-pd][p]
-                ,q)-pd*getattr(part.dims,q)
+                ,q)-pd*getattr(part.get_dims(),q)
     else:
         corner[p]=getattr(extreme_points(points,
-            corner,part.dims.as_tuple())[1-pd][p],q)-pd*getattr(part.dims,q)
+            corner,part.get_dims().as_tuple())[1-pd][p],q)-pd*getattr(part.get_dims(),q)
 
     return corner
 
@@ -133,8 +206,7 @@ def stick_on_part(
         part,
         pos,
         align,
-        useconvexhull,
-        gap):
+        useconvexhull):
 
     """
     "parts" is used to get a collection of points that describe the locally
@@ -181,3 +253,19 @@ def stick_on_part(
 
     part.translate(corner)
     return parts + [part]
+
+def parts_hull(parts):
+    """
+    Find the (rectangularly-prismic) hull of the parts.
+    Returns a tuple of 2 point_t. First is the bottom corner of the hull, second
+    represents its dimensions.
+    """
+    points=[]
+    for p in parts:
+        points += p.get_rect_points()
+    ep=extreme_points(points)
+    return (
+        point_t(ep[0][0].x,ep[0][1].y,ep[0][2].z),
+        point_t(ep[1][0].x-ep[0][1].x,
+            ep[1][1].y-ep[0][1].y,
+            ep[1][2].z-ep[0][2].z))

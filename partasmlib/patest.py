@@ -21,10 +21,18 @@ for m in ma:
     sys.stderr.write(m.__string__()+'\n')
 
 parts=pa.stick_on_part(parts,pa.cube_t(dims=(0.5,0.25,0.5)),
-        'e',('','+','+'),False,0)
+        'e',('','+','+'),False)
 parts=pa.stick_on_part(parts,pa.cube_t(dims=(0.5,0.25,0.25)),
-        'w',('','+','-'),False,0)
+        'w',('','+','-'),False)
+parts=pa.stick_on_part(parts,pa.cube_t(dims=(0.5,0.25,0.25)),
+        'b',('+','+',''),False)
+parts=pa.stick_on_part(parts,pa.cube_t(dims=(0.75,0.25,0.25),gap=0.2),
+        't',('-','+',''),False)
+parts=pa.stick_on_part(parts,pa.cube_t(dims=(0.75,0.25,0.25),gap=0.3),
+        'n',('-','','-'),False)
+parts=pa.stick_on_part(parts,pa.cube_t(dims=(0.75,0.25,0.25),gap=0.1),
+        'w',('','+','-'),False)
 
 for p in parts:
-    print(p.oscad_draw())
+    print(p.oscad_draw_solid())
 #print(parts[-1].oscad_draw())
