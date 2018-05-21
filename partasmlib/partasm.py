@@ -24,6 +24,14 @@ class point_t:
         else:
             return NotImplemented
 
+    def __sub__(self,other):
+        if isinstance(other,point_t):
+            return point_t(self.x - other.x,
+                self.y - other.y,
+                self.z - other.z)
+        else:
+            return NotImplemented
+
     def __string__(self):
         return "({self.x},{self.y},{self.z})".format(self=self)
 
@@ -157,7 +165,6 @@ def extreme_points(points,corner=(None,None,None),dims=(None,None,None)):
         ['x','y','z']])
     return (mins,maxs)
 
-
 sticky_dims={
     # dimension indices, dimension names, include part dimension or not
     'e':(1,2,'y','z',0),
@@ -266,6 +273,6 @@ def parts_hull(parts):
     ep=extreme_points(points)
     return (
         point_t(ep[0][0].x,ep[0][1].y,ep[0][2].z),
-        point_t(ep[1][0].x-ep[0][1].x,
+        point_t(ep[1][0].x-ep[0][0].x,
             ep[1][1].y-ep[0][1].y,
             ep[1][2].z-ep[0][2].z))
