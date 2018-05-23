@@ -240,8 +240,9 @@ def stick_on_part(
     corner described by the L, even if the part would fit. if "useconvexhull" is
     false, then it could be placed in this corner if it fits and that position
     is requested
+    TODO: It doesn't seem this works correctly, or at least not as expected. But
+    the convex hull seems to work.
 
-    "gap" is the amount of space to leave between the new part and the parts
     """
 
     points=[]
