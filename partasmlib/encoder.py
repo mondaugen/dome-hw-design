@@ -10,7 +10,7 @@ shaft_center_y=6.5
 length=shaft_center_y+7.25
 height=20
 bottom_height=6.6
-shaft_diameter=10
+shaft_diameter=7
 shaft_gap=1
 
 class encoder_t(pa.cube_t):
@@ -18,12 +18,12 @@ class encoder_t(pa.cube_t):
     Basically a cube but also cuts the hole for the encoder
     """
     def __init__(self,coords=(0,0,0)):
-        pa.cube_t.__init__(self,coords,dims=(width,length,height),gap=0)
+        pa.cube_t.__init__(self,coords,dims=(width,length,bottom_height),gap=0)
 
     def oscad_draw_solid(self):
         trans=self.get_trans_to_solid()
         dims=self.get_dims()
-        trans_centre=[trans.x+dims.x*0.5,trans.y+shaft_center_y,0]
+        trans_centre=[dims.x*0.5,shaft_center_y,0]
         return("""
         translate([{trans.x},{trans.y},{trans.z}])
         cube([{dims.x},{dims.y},{bottom_height}]);

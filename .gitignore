@@ -1,2 +1,3 @@
 test.scad
 *.pyc
+*.DS_Store

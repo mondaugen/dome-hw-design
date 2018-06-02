@@ -9,3 +9,5 @@ wall_thickness=3
 # Hole depths that should in theory be infinite
 hole_depth=100
 
+# Thickness of PCB
+pcb_thickness=1.575
