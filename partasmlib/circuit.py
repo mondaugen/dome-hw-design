@@ -20,30 +20,15 @@ wallgap=dpc.wall_thickness
 class circuit_t(pa.cube_t):
 
     def __init__(self):
-        #self.midi_jack_out=mj.midi_jack_t(hole_relative_to_bottom=False)
-        #self.midi_jack_in=mj.midi_jack_t(hole_relative_to_bottom=False)
-        #self.dc_jack=dj.dc_jack_t(overhang=wallgap+1)
-        #self.usb_a=uta.usbtypea_t(overhang=wallgap-1)
 
-        #back_wall_parts=[ self.midi_jack_out ]
-        #back_wall_parts=pa.stick_on_part(back_wall_parts,self.midi_jack_in,'e',('','+','+'),False)
-        #back_wall_parts=pa.stick_on_part(back_wall_parts,self.usb_a,'e',('','+','+'),False)
-        #back_wall_parts=pa.stick_on_part(back_wall_parts,self.dc_jack,'e',('','+','+'),False)
         self.back_wall_parts = bwp.back_wall_parts_t()
         self.top_circuit=topcirc.top_circuit_t(ideal_width=self.back_wall_parts.get_dims().x)
         self.parts=pa.stick_on_part([self.back_wall_parts],
                 self.top_circuit,
                 's',('-','','+'),False)
         self.top_circuit.translate((0,0,self.top_circuit.get_dims().z+pcb_thickness))
-        #self.parts=[self.top_circuit]
-
-#        # Led array starts in front of and above back_wall_parts
-#        self.parts=pa.stick_on_part(back_wall_parts,
-#                self.led_array,
-#                's',('-','','+'),True)
-#        # Move them above pcb
-#        self.led_array.translate((0,0,self.led_array.get_dims().z+pcb_thickness))
-#        self.top_encoder.translate((0,0,self.top_encoder.get_dims().z+pcb_thickness))
+        co,dim=pa.parts_hull(self.parts)
+        pa.cube_t.__init__(self,coords=co.as_tuple(),dims=dim.as_tuple())
 
     def oscad_draw_solid(self):
         s=""
