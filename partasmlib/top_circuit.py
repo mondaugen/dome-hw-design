@@ -94,6 +94,12 @@ class top_circuit_t(pa.cube_t):
             s += p.oscad_draw_void() + "\n"
         
         return s
+ 
+    def oscad_get_libs(self):
+        se=set()
+        for p in self.parts:
+            se.add(p.oscad_get_libs())
+        return "\n".join(se)
 
     def translate(self,coords):
         pa.cube_t.translate(self,coords)

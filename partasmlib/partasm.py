@@ -32,6 +32,16 @@ class point_t:
         else:
             return NotImplemented
 
+    def __mul__(self,other):
+        if isinstance(other,point_t):
+            return point_t(self.x * other.x,
+                self.y * other.y,
+                self.z * other.z)
+        elif isinstance(other,float) or isinstance(other,int):
+            return point_t(self.x * other, self.y * other, self.z * other)
+        else:
+            return NotImplemented
+
     def __string__(self):
         return "({self.x},{self.y},{self.z})".format(self=self)
 
@@ -68,6 +78,13 @@ class part_t:
         Draw the object that will be subtracted from the rest of the drawing.
         """
         return NotImplemented
+
+    def oscad_get_libs(self):
+        """
+        Return the use <path/to/lib> string that this object needs to have at
+        the top of the file to import the required modules in openscad.
+        """
+        return ''
 
 def convert_to_gap_dict(gap):
     """

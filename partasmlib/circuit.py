@@ -38,3 +38,9 @@ class circuit_t(pa.cube_t):
             #s += super(type(p),p).oscad_draw_solid() + "\n"
         
         return s
+
+    def oscad_get_libs(self):
+        se=set()
+        for p in self.parts:
+            se.add(p.oscad_get_libs())
+        return "\n".join(se)

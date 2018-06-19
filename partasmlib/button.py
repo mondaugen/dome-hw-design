@@ -11,6 +11,7 @@ length=6
 height=4.3
 bottom_height=3.45
 button_diameter=3.5
+corner_radius=1
 button_gap=dpc.wall_thickness
 
 class button_t(pa.cube_t):
@@ -48,7 +49,12 @@ class button_shaft(pa.cube_t):
     height is the distance from the top of the button to the top of the wall on
     the top of the case.
     """
-    def __init__(self,but,height=5):
+    def __init__(self,but,height=5,inside=False):
+        """
+        If inside is True, draws inside, useful for printing the actual button
+        key.
+        """
+        self.inside=inside
         self.height = height
         self.button = but
         dims = but.get_dims()
@@ -62,26 +68,39 @@ class button_shaft(pa.cube_t):
         dims=self.get_dims()
         walltransx=dims.x-button_gap
         walltransy=dims.y-button_gap
+        button_hw_height=height
+        button_height_rem=self.height
 
-        return("""
-        translate([{trans.x},{trans.y},{trans.z}])
-        union () {{
-        cube([{button_gap},{dims.y},{height}]);
-        cube([{dims.x},{button_gap},{height}]);
-        }};
-        translate([{trans.x},{trans.y},{trans.z}])
-        translate([{walltransx},0,0])
-        cube([{button_gap},{dims.y},{height}]);
-        translate([{trans.x},{trans.y},{trans.z}])
-        translate([0,{walltransy},0])
-        cube([{dims.x},{button_gap},{height}]);
-        """.format(
-            trans=trans,
-            button_gap=button_gap,
-            height=dims.z,
-            dims=dims,
-            walltransx=walltransx,
-            walltransy=walltransy))
-
+        if self.inside:
+            return("""
+            translate([{trans.x},{trans.y},{trans.z}])
+            translate([{inside_off},{inside_off},button_hw_height])
+            cube([inside_width,inside_width,button_height_rem]);
+            """.format(
+                trans=trans,
+                button_gap=button_gap,
+                height=dims.z,
+                dims=dims,
+                walltransx=walltransx,
+                walltransy=walltransy))
+        else:
+            return("""
+            translate([{trans.x},{trans.y},{trans.z}])
+            rounded_shaft(
+                [{local_trans.x},{local_trans.y},{local_trans.z}],
+                [{dims.x},{dims.y},{dims.z}],
+                {corner_radius},
+                {wall_thickness}
+            );
+            """.format(
+                trans=trans,
+                wall_thickness=button_gap,
+                corner_radius=corner_radius,
+                dims=dims,
+                local_trans=dims*0.5
+                ))
+    
+    def oscad_get_libs(self):
+        return("use <libs/rounded_shaft.scad>")
 
 
