@@ -4,8 +4,9 @@ sources+=$(wildcard test/*.py)
 .res :
 	mkdir .res
 
-.res/libs : .res
-	cp -r libs .res/libs
+.res/libs : .res $(wildcard libs/*)
+	mkdir -p .res/libs
+	cp -rf libs .res/
 
 .res/circuit_test.scad : .res/libs $(sources)
 	python test/circuittest.py > $@

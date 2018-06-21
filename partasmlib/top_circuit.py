@@ -71,7 +71,7 @@ class top_circuit_t(pa.cube_t):
 
         # put shafts around the buttons
         for b in self.buttons:
-            self.parts.append(btn.button_shaft(b))
+            self.parts.append(btn.button_shaft(b,inside=True))
 
         co,dim=pa.parts_hull(self.parts)
         negco=tuple(-1*c for c in co.as_tuple())

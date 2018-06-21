@@ -3,6 +3,7 @@ import sys
 
 circ=circuit.circuit_t()
 print(circ.oscad_get_libs())
+print("$fn=50;")
 print(circ.oscad_draw_solid())
 #print(super(type(circ),circ).oscad_draw_solid())
 dims=circ.get_dims()
