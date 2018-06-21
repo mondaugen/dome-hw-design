@@ -127,13 +127,14 @@ class button_shaft(pa.cube_t):
                 s+="""
                 translate([{key_top_trans.x},{key_top_trans.y},{key_top_trans.z}])
                 linear_extrude ({keytextthickness}) {{
-                text({keytext},font="{font}",size={fontsize},halign="center",valign="center");
+                text("{keytext}",font="{font}",size={fontsize},halign="center",valign="center");
                 }}
             """
             s+="""
             }}
             }}
             """
+            key_gap=wall_thickness+button_gap
             key_rail_thickness=shaft_thickness-key_rail_gap
             return(s.format(
             trans=trans,
@@ -143,12 +144,12 @@ class button_shaft(pa.cube_t):
                 length,
                 self.keyheight),
             corner_radius=corner_radius,
-            trans_e=pa.point_t(wall_thickness-key_rail_thickness,dims.y*0.5-key_rail_thickness*0.5,0),
-            trans_w=pa.point_t(wall_thickness+inside_dims.x,dims.y*0.5-key_rail_thickness*0.5,0),
-            trans_s=pa.point_t(dims.x*0.5-key_rail_thickness*0.5,wall_thickness-key_rail_thickness,0),
-            trans_n=pa.point_t(dims.x*0.5-key_rail_thickness*0.5,wall_thickness+inside_dims.y,0),
-            rail=pa.point_t(key_rail_thickness,key_rail_thickness,inside_dims.z),
-            key_top_trans=pa.point_t(dims.x*0.5,dims.y*0.5,self.keyheight),
+            trans_e=pa.point_t(key_gap-key_rail_thickness,dims.y*0.5-key_rail_thickness*0.5,height),
+            trans_w=pa.point_t(key_gap+width,dims.y*0.5-key_rail_thickness*0.5,height),
+            trans_s=pa.point_t(dims.x*0.5-key_rail_thickness*0.5,key_gap-key_rail_thickness,height),
+            trans_n=pa.point_t(dims.x*0.5-key_rail_thickness*0.5,key_gap+length,height),
+            rail=pa.point_t(key_rail_thickness,key_rail_thickness,height),
+            key_top_trans=pa.point_t(dims.x*0.5,dims.y*0.5,self.button.get_dims().z+self.keyheight),
             keytextthickness=keytextthickness,
             keytext=self.keytext,
             font=self.font,
