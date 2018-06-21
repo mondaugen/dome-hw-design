@@ -11,3 +11,5 @@ sources+=$(wildcard test/*.py)
 .res/circuit_test.scad : .res/libs $(sources)
 	python test/circuittest.py > $@
 
+.res/button_test.scad : .res/libs $(sources)
+	python test/button_test.py > $@

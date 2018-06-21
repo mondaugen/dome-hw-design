@@ -14,6 +14,9 @@ button_diameter=3.5
 corner_radius=0.5
 # thickness of shaft walls
 wall_thickness=dpc.wall_thickness
+# extra space that button key takes up, the same amount added to width and
+# length
+key_extra=5##15-width
 # space between shaft and button
 button_gap=0.5
 # space between key rail and shaft rail
@@ -28,30 +31,30 @@ class button_t(pa.cube_t):
     """
     def __init__(self,coords=(0,0,0)):
         # We define our own gap because we don't want a gap in the z dimension
-        xspace=2*(button_gap+wall_thickness)
+        xspace=2*(button_gap+wall_thickness+key_extra)
         pa.cube_t.__init__(self,
                 coords,
                 dims=(xspace+width,
                     xspace+length,height),gap=0)
 
     def oscad_draw_solid(self):
-        trans=self.get_trans_to_solid()+pa.point_t(1.,1.,0)*(wall_thickness+button_gap)
+        trans=self.get_trans_to_solid()+pa.point_t(1.,1.,0)*(wall_thickness+button_gap+key_extra)
         dims=pa.point_t(width,length,height)
         trans_centre=[dims.x*0.5,dims.y*0.5,0]
         top_height=height-bottom_height
-        return ""
-#        return("""
-#        translate([{trans.x},{trans.y},{trans.z}])
-#        cube([{dims.x},{dims.y},{bottom_height}]);
-#        translate([{trans.x},{trans.y},{trans.z}])
-#        translate([{trans_centre[0]},{trans_centre[1]},{trans_centre[2]}])
-#        cylinder(r={button_rad},h={height});
-#        """.format(trans=trans,
-#            dims=dims,
-#            trans_centre=trans_centre,
-#            bottom_height=bottom_height,
-#            button_rad=button_diameter*0.5,
-#            height=height))
+#        return ""
+        return("""
+        translate([{trans.x},{trans.y},{trans.z}])
+        cube([{dims.x},{dims.y},{bottom_height}]);
+        translate([{trans.x},{trans.y},{trans.z}])
+        translate([{trans_centre[0]},{trans_centre[1]},{trans_centre[2]}])
+        cylinder(r={button_rad},h={height});
+        """.format(trans=trans,
+            dims=dims,
+            trans_centre=trans_centre,
+            bottom_height=bottom_height,
+            button_rad=button_diameter*0.5,
+            height=height))
 
     def oscad_draw_void(self):
         return ""
@@ -68,7 +71,7 @@ class button_shaft(pa.cube_t):
     keytext will be printed on the key if not none (default)
     """
     def __init__(self,but,height=5,inside=False,outside=True,keyheight=None,
-            keytext=None,font="Sans",fontsize=10):
+            keytext=None,font="Sans",fontsize=length*0.5):
         """
         If inside is True, draws inside, useful for printing the actual button
         key.
@@ -101,8 +104,9 @@ class button_shaft(pa.cube_t):
         shaft_thickness=wall_thickness*0.5
         s=""
         if self.inside:
+            s_=""
             # Draw key
-            s+="""
+            s_+="""
             translate([{trans.x},{trans.y},{trans.z}])
             difference () {{
             union () {{
@@ -124,24 +128,24 @@ class button_shaft(pa.cube_t):
             union () {{
             """
             if self.keytext:
-                s+="""
+                s_+="""
                 translate([{key_top_trans.x},{key_top_trans.y},{key_top_trans.z}])
                 linear_extrude ({keytextthickness}) {{
                 text("{keytext}",font="{font}",size={fontsize},halign="center",valign="center");
                 }}
             """
-            s+="""
+            s_+="""
             }}
             }}
             """
             key_gap=wall_thickness+button_gap
             key_rail_thickness=shaft_thickness-key_rail_gap
-            return(s.format(
+            s += s_.format(
             trans=trans,
             local_trans=pa.point_t(dims.x*0.5,dims.y*0.5,self.button.get_dims().z+self.keyheight*0.5),
             key_dims=pa.point_t(
-                width,
-                length,
+                width+key_extra,
+                length+key_extra,
                 self.keyheight),
             corner_radius=corner_radius,
             trans_e=pa.point_t(key_gap-key_rail_thickness,dims.y*0.5-key_rail_thickness*0.5,height),
@@ -149,16 +153,17 @@ class button_shaft(pa.cube_t):
             trans_s=pa.point_t(dims.x*0.5-key_rail_thickness*0.5,key_gap-key_rail_thickness,height),
             trans_n=pa.point_t(dims.x*0.5-key_rail_thickness*0.5,key_gap+length,height),
             rail=pa.point_t(key_rail_thickness,key_rail_thickness,height),
-            key_top_trans=pa.point_t(dims.x*0.5,dims.y*0.5,self.button.get_dims().z+self.keyheight),
+            key_top_trans=pa.point_t(dims.x*0.5,dims.y*0.5,
+                self.button.get_dims().z+self.keyheight-keytextthickness),
             keytextthickness=keytextthickness,
             keytext=self.keytext,
             font=self.font,
             fontsize=self.fontsize,
             wall_thickness=wall_thickness
-            ))
+            )
         # Draw shaft and rails in which key slides
         if self.outside:
-            s+= """
+            s_ = """
             translate([{trans.x},{trans.y},{trans.z}])
             difference () {{
             rounded_shaft(
@@ -191,6 +196,7 @@ class button_shaft(pa.cube_t):
                 trans_n=pa.point_t(dims.x*0.5-shaft_thickness*0.5,wall_thickness+inside_dims.y,0),
                 rail=pa.point_t(shaft_thickness,shaft_thickness,inside_dims.z)
                 )
+            s+=s_
         return s
 
     def oscad_draw_void(self):
