@@ -1,6 +1,7 @@
 use <rounded_polygon.scad>
 use <../Round-Anything/polyround.scad>
 use <smooth_polyhedron.scad>
+use <common_dims.scad>
 
 // Add radius to all points
 function points_w_radius(p,radius)=[for(i=[0:len(p)-1])[p[i].x,p[i].y,radius]];
@@ -42,7 +43,7 @@ top_trap_prism_vertices=[
 // Coordinates
 box_width=70; // x-dimension
 box_length=70; // y-dimension
-box_wall=2.5;
+box_wall=wall_thickness();
 play=5;
 encoder_holder_height=1;
 encoder_holder_width=2.1;
@@ -262,8 +263,23 @@ lid_points=translate_xy([
 lid_shell_length=lid_length+2*lid_gap;
 lid_shell_width=lid_width+2*lid_gap;
 
+text_top_corner_x = box_wall;
+text_top_corner_y = box_length - box_wall;
+text_top_corner_z = inner_box_wall_z+box_wall;
+pica = .3528/0.5;
+
+module box_text() {
+     translate([text_top_corner_x,text_top_corner_y-(12*pica),text_top_corner_z-box_wall*0.5])
+        linear_extrude(height=box_wall)
+        union () {
+            text("`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./",size=12);
+            translate([0,-12*pica,0]) 
+            text("890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./",size=6);
+        }
+}
+
 // Detail
-$fn=10;
+$fn=30;
 
 module box_walls() {
     for (p=[[box_wall,box_length],[box_width,box_wall]]) {
@@ -276,8 +292,11 @@ module box_walls() {
     }
 }
 module box_top() {
-    translate([0,0,inner_box_wall_z])
-    rounded_cube(box_width,box_length,box_wall,corner_r);
+    difference() {
+        translate([0,0,inner_box_wall_z])
+        rounded_cube(box_width,box_length,box_wall,corner_r);
+        box_text();
+    }
 }
 
 module midi_jack_holes() {

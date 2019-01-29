@@ -2,6 +2,6 @@
 // Given as function so that only these symbols are exposed to external scripts
 
 // The thickness of box walls
-function wall_thickness()=3;
+function wall_thickness()=5;
 // The radius of the button corners
 function button_corner_r()=1;
