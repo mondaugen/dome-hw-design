@@ -1,7 +1,10 @@
+function assertion_failed()=(assertion_failed());
+
 module domeassert(x,msg)
 { 
 if (!x) {
-echo("this shit failed:", msg);
+    echo("this shit failed:", msg);
+    echo("",assertion_failed());
 }
 }
 
@@ -50,4 +53,8 @@ rounded_square(center,[dims.x+2*wall_thickness,dims.y+2*wall_thickness,dims.z],w
 rounded_square(center,[dims.x,dims.y,dims.z+1e-3],corner_radius);
 }
 }
+
+function zeroz(p)=[p[0],p[1],0];
+function wrap(i,mi,ma)=(i<mi?wrap(i+(ma-mi),mi,ma):i>=ma?wrap(i-(ma-mi),mi,ma):i);
+function index_slice(a,start,end)=[for(i=[start:(end-1)])a[wrap(i,0,len(a))]];
 

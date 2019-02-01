@@ -1,13 +1,14 @@
 use <rounded_polygon.scad>
-use <../Round-Anything/polyround.scad>
+//use <../Round-Anything/polyround.scad>
 use <smooth_polyhedron.scad>
 use <common_dims.scad>
+use <bottom_screws.scad>
 
 // Add radius to all points
-function points_w_radius(p,radius)=[for(i=[0:len(p)-1])[p[i].x,p[i].y,radius]];
+//function points_w_radius(p,radius)=[for(i=[0:len(p)-1])[p[i].x,p[i].y,radius]];
 // Like polyRound but constant radius
-function polyRoundC(points,radius,fn=5,mode=0)=
- polyRound(points_w_radius(points,radius),fn,mode);
+//function polyRoundC(points,radius,fn=5,mode=0)=
+// polyRound(points_w_radius(points,radius),fn,mode);
 // Mirror xy points around x axis
 function mirror_xy_x(p)=[for(i=[0:len(p)-1])[p[i].x*-1,p[i].y]];
 function mirror_xyz_x(p)=[for(i=[0:len(p)-1])[p[i].x*-1,p[i].y,p[i].z]];
@@ -151,10 +152,10 @@ pcb_screw_hole_shell_width=3;
 pcb_screw_hole_z=pcb_top_z-pcb_thickness;
 right_pcb_screw_x=right_box_outer-box_wall-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius);
 pcb_screw_coords=[
-    [box_wall+pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius,
-        led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
-    [led_block_x+led_block_width+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width,
-        led_block_y+led_block_height-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
+//    [box_wall+pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius,
+//        led_block_y-(pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width)],
+//    [led_block_x+led_block_width+pcb_screw_pilot_hole_radius+pcb_screw_hole_shell_width,
+//        led_block_y+led_block_height-(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
     [box_wall+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius),
         box_wall+(pcb_screw_hole_shell_width+pcb_screw_pilot_hole_radius)],
     [right_pcb_screw_x,
@@ -268,18 +269,18 @@ text_top_corner_y = box_length - box_wall;
 text_top_corner_z = inner_box_wall_z+box_wall;
 pica = .3528/0.5;
 
+mold_screw_depth = 26;
+
 module box_text() {
-     translate([text_top_corner_x,text_top_corner_y-(12*pica),text_top_corner_z-box_wall*0.5])
+     translate([text_top_corner_x,text_top_corner_y-(20*pica),text_top_corner_z-box_wall*0.5])
         linear_extrude(height=box_wall)
         union () {
             text("`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./",size=12);
-            translate([0,-12*pica,0]) 
-            text("890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./",size=6);
         }
 }
 
 // Detail
-$fn=30;
+$fn=10;
 
 module box_walls() {
     for (p=[[box_wall,box_length],[box_width,box_wall]]) {
@@ -543,6 +544,25 @@ module sanity_check_circuit ()
     }
 }
 
+// Holes for the screws at the bottom used to hold the box into the mold
+function mold_screw_hole_positions ()=[
+[wall_thickness()*0.5,wall_thickness()*0.5,-0.001],
+[box_width-wall_thickness()*0.5,wall_thickness()*0.5,-0.001],
+[box_width-wall_thickness()*0.5,box_length-wall_thickness()*0.5,-0.001],
+[wall_thickness()*0.5,box_length-wall_thickness()*0.5,-0.001],
+];
+
+module mold_screw_holes () {
+    for (t=mold_screw_hole_positions()) {
+        translate(t)
+            cylinder(mold_screw_depth,bottom_screw_diameter()*0.5);
+    }
+}
+
+// Let other modules query the size of our box
+function box_dimensions()=[box_width,box_length,box_height];
+function corner_radius()=corner_r;
+
 // The box
 color ("green",0.25) {
     difference () {
@@ -551,6 +571,7 @@ color ("green",0.25) {
                 box_walls();
                 midi_jack_holes();
                 dc_jack_hole();
+                mold_screw_holes();
             }
             difference () {
                 union () {

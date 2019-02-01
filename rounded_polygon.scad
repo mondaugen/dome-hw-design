@@ -1,5 +1,40 @@
 use <corner_sphere.scad>
 
+function vadd(points,point)=[for(p=points)p+point];
+function vmulc(points,c)=[for(p=points)p*c];
+function sum(list, idx = 0, result = 0) = 
+	idx >= len(list) ? result : sum(list, idx + 1, result + list[idx]);
+function midpoint(points)=sum(points,result=[0,0,0])/len(points);
+function normalize(p)=p/norm(p);
+function normalize_l(ps)=[for(p=ps)normalize(p)];
+// The projection of A onto B
+function proj_v(A,B)=(A*B)/(B*B)*B;
+// vectorized indexing
+function index_v(p,i)=[for(i_=i)p[i_]];
+
+// The center of the circle given by rounded corner
+function rounded_corner_center(
+    point_left,
+    point_center,
+    point_right,
+    r // radius of circle at corner
+    )=
+    let(
+    A_=point_left-point_center,
+    B_=point_right-point_center,
+    A=A_/norm(A_),
+    B=B_/norm(B_),
+    M=(A+B)*0.5,
+    a=r/norm(M-1*(M*B)/(B*B)*B)) point_center + a*M;
+
+
+function rounded_corner_centers(
+    points,
+    r)=let(
+    points_=concat([points[len(points)-1]],points,[points[0]]))
+        [for (i=[0:len(points_)-3])rounded_corner_center(points_[i],points_[i+1],points_[i+2],r)];
+    
+
 module rounded_corner(
     point_left,
     point_center,
@@ -7,17 +42,8 @@ module rounded_corner(
     r, // radius of circle at corner
     h
 ) {
-    A_=point_left-point_center;
-    B_=point_right-point_center;
-    A=A_/norm(A_);
-    B=B_/norm(B_);
-    M=(A+B)*0.5;
-    a=r/norm(M-(M*B)/(B*B)*B);
-    //echo(a);
-    translate(point_center)
-        translate(a*M)
+    translate(rounded_corner_center(point_left,point_center,point_right,r))
             cylinder(r=r,h=h); 
-    //polygon([point_left,point_center,point_right]);
 }
 
 module rounded_convex_polygon(
@@ -34,17 +60,49 @@ module rounded_convex_polygon(
     }
 }
 
-function vadd(points,point)=[for(p=points)p+point];
-function vmulc(points,c)=[for(p=points)p*c];
-function sum(list, idx = 0, result = 0) = 
-	idx >= len(list) ? result : sum(list, idx + 1, result + list[idx]);
-function midpoint(points)=sum(points,result=[0,0,0])/len(points);
-function normalize(p)=p/norm(p);
-function normalize_l(ps)=[for(p=ps)normalize(p)];
-// The projection of A onto B
-function proj_v(A,B)=(A*B)/(B*B)*B;
-// vectorized indexing
-function index_v(p,i)=[for(i_=i)p[i_]];
+module _polygon_corners(
+    points,
+    r,
+    h
+)
+{
+    points_=concat([points[len(points)-1]],points,[points[0]]);
+    for (i=[0:len(points_)-3]) {
+        rounded_corner(points_[i],points_[i+1],points_[i+2],r,h);
+    }
+}
+
+//allows removing the center with a constant wall width
+//note the minimum radius of the inner polygon's corners is 1e-3
+module hollow_rounded_convex_polygon(
+points,
+r,
+h,
+w,
+test=false)
+{
+    inner_centers=rounded_corner_centers(points,r);
+    inner_r=max(r-w,1e-3);
+    if (test) {
+        _polygon_corners(
+            points,
+            r,
+            h
+        );
+        for (point=inner_centers) {
+            translate(point) cylinder(r=inner_r,h=2*h);
+        }
+    } else {
+        difference () {
+            rounded_convex_polygon(points,r,h);
+            hull () {
+                for (point=inner_centers) {
+                    translate(point) cylinder(r=inner_r,h=h);
+                }
+            }
+        }
+    }
+}
 
 // returns the point of the sphere sitting in the corner desribed by these
 // points
