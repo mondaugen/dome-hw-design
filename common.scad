@@ -58,3 +58,8 @@ function zeroz(p)=[p[0],p[1],0];
 function wrap(i,mi,ma)=(i<mi?wrap(i+(ma-mi),mi,ma):i>=ma?wrap(i-(ma-mi),mi,ma):i);
 function index_slice(a,start,end)=[for(i=[start:(end-1)])a[wrap(i,0,len(a))]];
 
+// The distance between parts that are supposed to fit snuggly
+tight_gap=0.5;
+
+// The minimum amount of material (e.g., silicone) between the part and the edge of the mold
+min_mold_thickness=13; // roughly .5 inch
