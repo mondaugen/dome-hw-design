@@ -33,11 +33,13 @@ air_hole_offset=min_mold_thickness*0.5;
 
 air_hole_z=1;
 air_hole_coords=[
-[-air_hole_offset,-air_hole_offset,1],
-[case_bottom_holder_pocket_dims()[0]+air_hole_offset,-air_hole_offset,1],
-[
-    case_bottom_holder_pocket_dims()[0]+air_hole_offset,
-    case_bottom_holder_pocket_dims()[1]+air_hole_offset,1],
+//[-air_hole_offset,-air_hole_offset,1],
+//[case_bottom_holder_pocket_dims()[0]+air_hole_offset,-air_hole_offset,1],
+//[
+//    case_bottom_holder_pocket_dims()[0]+air_hole_offset,
+//    case_bottom_holder_pocket_dims()[1]+air_hole_offset,1],
+[0,0,1],
+[5,0,1],
 [5,5,1],
 [0,5,1]
 ];
@@ -116,8 +118,9 @@ module outer_curved_bottom () {
                 translate(air_hole_coords[i]) cylinder(r=air_hole_outer_radius,h=air_hole_height);
             }
             hull () {
-                translate(shaft_attach_hole_coords[wrap(i+1,0,len(shaft_attach_hole_coords))]) 
-                        cylinder(r=shaft_attach_hole_outer_radius,h=shaft_attach_hole_height);
+                translate(
+                    shaft_attach_hole_coords[wrap(i+1,0,len(shaft_attach_hole_coords))]) 
+                    cylinder(r=shaft_attach_hole_outer_radius,h=shaft_attach_hole_height);
                 translate(med_cyl_coords[i])
                     cylinder(r=med_cyl_radius,h=med_cyl_height);
                 translate(outer_med_cyl_coords[i])
