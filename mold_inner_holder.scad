@@ -21,7 +21,8 @@ case_bottom_holder_corner_sphere_centers=[
 
 module case_bottom_holder_pocket () {
     hull() {
-        for (p=case_bottom_holder_corner_sphere_centers) { translate(p) sphere(r=corner_radius()+tight_gap); }
+        for (p=case_bottom_holder_corner_sphere_centers) {
+            translate(p) sphere(r=corner_radius()+tight_gap); }
     }
 }
 function case_bottom_holder_pocket_dims()=[for(p=box_dimensions())p+2*tight_gap];
@@ -115,7 +116,8 @@ module outer_curved_bottom () {
                     cylinder(r=med_cyl_radius,h=med_cyl_height);
                 translate(outer_med_cyl_coords[i])
                     cylinder(r=outer_med_cyl_radius,h=outer_med_cyl_height);
-                translate(air_hole_coords[i]) cylinder(r=air_hole_outer_radius,h=air_hole_height);
+                translate(air_hole_coords[i])
+                    cylinder(r=air_hole_outer_radius,h=air_hole_height);
             }
             hull () {
                 translate(

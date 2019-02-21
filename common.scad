@@ -1,3 +1,5 @@
+// All dimensions in millimeters
+
 function assertion_failed()=(assertion_failed());
 
 module domeassert(x,msg)
@@ -63,3 +65,52 @@ tight_gap=0.5;
 
 // The minimum amount of material (e.g., silicone) between the part and the edge of the mold
 min_mold_thickness=13; // roughly .5 inch
+
+// The diameter of the bolts used to attach parts of the mold together
+mold_assemble_bolt_diameter=3;
+
+// The diameter of the shafts housing the assembly bolts
+mold_assemble_bolt_housing_diameter=mold_assemble_bolt_diameter+0.5;
+
+// The thickness of the mold's walls
+mold_wall_thickness=mold_assemble_bolt_housing_diameter+2.5;
+
+// The height of the upper opening of the inner mold holder's air holes. These
+// are slightly below the xy plane of the top of the inner holder because when
+// molding, the mold will be upside down and we want to guide the bubbles to
+// float out. The top of the inner mold slopes towards these openings to make a
+// guide.
+inner_mold_air_hole_z=-3;
+
+// How far down the top of the cylinder is that maintains a curved bottom for
+// the inside of the inner holder
+inner_mold_inside_med_cyl_z=0.5*inner_mold_air_hole_z;
+
+// The diameter of the air holes in the inner mold
+inner_mold_air_hole_inner_diameter=5;
+
+// The diameter of the shaft surrounding the air hole in the inner mold
+inner_mold_air_hole_outer_diameter=6;
+
+
+function ratio_w_gap(
+length,
+gap)=(length+2*gap)/length;
+
+module scale_to_get_gap(
+x_length,
+y_length,
+z_length,
+x_gap,
+y_gap,
+z_gap){
+echo("",ratio_w_gap(x_length,x_gap));
+scale([
+ratio_w_gap(x_length,x_gap),
+ratio_w_gap(y_length,y_gap),
+ratio_w_gap(z_length,z_gap)
+]) children();
+}
+
+function vrange(x,start,stop)=
+start==stop?x[start]:concat(x[start],vrange(x,start+1,stop));
