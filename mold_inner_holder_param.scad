@@ -147,7 +147,7 @@ tolerance_gap,
 sink_z_dist)
 {
     intersection () {
-        translate([0,0,sink_z_dist]) cube([x_length,y_length,sink_z_dist]);
+        translate([0,0,sink_z_dist]) cube([x_length,y_length,-1*sink_z_dist]);
         inner_holder_part_socket(x_length,
         y_length,
         z_length,
@@ -170,9 +170,9 @@ let(
 // the z coordinate of the top of the cylinder
 med_cyl_z=0.5*inner_mold_air_hole_z+sink_z_dist,
 // the z coordinate of the bottom of the cylinder,
-med_cyl_z_bottom=inner_mold_bottom_max_thickness(sink_z_dist),
+med_cyl_z_bottom=-1*inner_mold_bottom_max_thickness(sink_z_dist),
 // the height of the cylinder
-med_cyl_h=med_cyl_z_bottom+med_cyl_z,
+med_cyl_h=med_cyl_z-med_cyl_z_bottom,
 med_cyl_offset=min_mold_thickness*0.5
 )
 [
@@ -183,7 +183,7 @@ med_cyl_offset=min_mold_thickness*0.5
 ];
 
 // the radius of these cylinders (basically infinitesimally small)
-med_cyl_radius=0.001;
+med_cyl_radius=1;//0.001;
 
 function inner_mold_air_hole_height(sink_z_dist)=
 inner_mold_bottom_max_thickness(sink_z_dist)+inner_mold_air_hole_z;
@@ -194,8 +194,8 @@ y_length,
 z_length,
 sink_z_dist,
 tolerance_gap) {
-difference () {
-hull () {
+//difference () {
+//hull () {
 for (p=inner_holder_air_hole_coords(x_length,y_length,sink_z_dist)) {
     translate(p) cylinder(r=inner_mold_air_hole_outer_diameter*0.5,
     h=inner_mold_air_hole_height(sink_z_dist)); }
@@ -209,21 +209,23 @@ inner_holder_part_socket_solid(
     z_length,
     tolerance_gap,
     sink_z_dist);
-}
-union () {
-for (p=inner_holder_air_hole_coords(x_length,y_length,sink_z_dist)) {
-    translate(zeroz(p))
-    translate([0,0,-1*inner_mold_bottom_max_thickness])
-    cylinder(r=inner_mold_air_hole_inner_diameter*0.5,
-        h=inner_mold_bottom_max_thickness); } 
-inner_holder_part_socket_solid(
-    x_length,
-    y_length,
-    z_length,
-    tolerance_gap,
-    sink_z_dist);
-
-} } } 
+//}
+//union () {
+//for (p=inner_holder_air_hole_coords(x_length,y_length,sink_z_dist)) {
+//    translate(zeroz(p))
+//    translate([0,0,-1*inner_mold_bottom_max_thickness])
+//    cylinder(r=inner_mold_air_hole_inner_diameter*0.5,
+//        h=inner_mold_bottom_max_thickness); } 
+//inner_holder_part_socket_solid(
+//    x_length,
+//    y_length,
+//    z_length,
+//    tolerance_gap,
+//    sink_z_dist);
+//
+//}
+//}
+} 
 
 //med_cyl_z=0.25;
 //med_cyl_coords=[
